@@ -263,10 +263,6 @@ public final class SignalServiceProtos {
        * <code>RECEIPT = 5;</code>
        */
       RECEIPT(4, 5),
-      /**
-       * <code>HERD = 7;</code>
-       */
-      HERD(5, 7),
       ;
 
       /**
@@ -289,10 +285,6 @@ public final class SignalServiceProtos {
        * <code>RECEIPT = 5;</code>
        */
       public static final int RECEIPT_VALUE = 5;
-      /**
-       * <code>HERD = 7;</code>
-       */
-      public static final int HERD_VALUE = 7;
 
 
       public final int getNumber() { return value; }
@@ -304,7 +296,6 @@ public final class SignalServiceProtos {
           case 2: return KEY_EXCHANGE;
           case 3: return PREKEY_BUNDLE;
           case 5: return RECEIPT;
-          case 7: return HERD;
           default: return null;
         }
       }
@@ -20064,85 +20055,84 @@ public final class SignalServiceProtos {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\023SignalService.proto\022\rsignalservice\"\207\002\n" +
+      "\n\023SignalService.proto\022\rsignalservice\"\375\001\n" +
       "\010Envelope\022*\n\004type\030\001 \001(\0162\034.signalservice." +
       "Envelope.Type\022\016\n\006source\030\002 \001(\t\022\024\n\014sourceD" +
       "evice\030\007 \001(\r\022\r\n\005relay\030\003 \001(\t\022\021\n\ttimestamp\030" +
       "\005 \001(\004\022\025\n\rlegacyMessage\030\006 \001(\014\022\017\n\007content\030" +
-      "\010 \001(\014\"_\n\004Type\022\013\n\007UNKNOWN\020\000\022\016\n\nCIPHERTEXT" +
+      "\010 \001(\014\"U\n\004Type\022\013\n\007UNKNOWN\020\000\022\016\n\nCIPHERTEXT" +
       "\020\001\022\020\n\014KEY_EXCHANGE\020\002\022\021\n\rPREKEY_BUNDLE\020\003\022" +
-      "\013\n\007RECEIPT\020\005\022\010\n\004HERD\020\007\"\315\001\n\007Content\022/\n\013da" +
-      "taMessage\030\001 \001(\0132\032.signalservice.DataMess" +
-      "age\022/\n\013syncMessage\030\002 \001(\0132\032.signalservice",
-      ".SyncMessage\022/\n\013callMessage\030\003 \001(\0132\032.sign" +
-      "alservice.CallMessage\022/\n\013nullMessage\030\004 \001" +
-      "(\0132\032.signalservice.NullMessage\"\330\003\n\013CallM" +
-      "essage\022/\n\005offer\030\001 \001(\0132 .signalservice.Ca" +
-      "llMessage.Offer\0221\n\006answer\030\002 \001(\0132!.signal" +
-      "service.CallMessage.Answer\0227\n\ticeUpdate\030" +
-      "\003 \003(\0132$.signalservice.CallMessage.IceUpd" +
-      "ate\0221\n\006hangup\030\004 \001(\0132!.signalservice.Call" +
-      "Message.Hangup\022-\n\004busy\030\005 \001(\0132\037.signalser" +
-      "vice.CallMessage.Busy\032(\n\005Offer\022\n\n\002id\030\001 \001",
-      "(\004\022\023\n\013description\030\002 \001(\t\032)\n\006Answer\022\n\n\002id\030" +
-      "\001 \001(\004\022\023\n\013description\030\002 \001(\t\032K\n\tIceUpdate\022" +
-      "\n\n\002id\030\001 \001(\004\022\016\n\006sdpMid\030\002 \001(\t\022\025\n\rsdpMLineI" +
-      "ndex\030\003 \001(\r\022\013\n\003sdp\030\004 \001(\t\032\022\n\004Busy\022\n\n\002id\030\001 " +
-      "\001(\004\032\024\n\006Hangup\022\n\n\002id\030\001 \001(\004\"\331\001\n\013DataMessag" +
-      "e\022\014\n\004body\030\001 \001(\t\0225\n\013attachments\030\002 \003(\0132 .s" +
-      "ignalservice.AttachmentPointer\022*\n\005group\030" +
-      "\003 \001(\0132\033.signalservice.GroupContext\022\r\n\005fl" +
-      "ags\030\004 \001(\r\022\023\n\013expireTimer\030\005 \001(\r\"5\n\005Flags\022" +
-      "\017\n\013END_SESSION\020\001\022\033\n\027EXPIRATION_TIMER_UPD",
-      "ATE\020\002\"\036\n\013NullMessage\022\017\n\007padding\030\001 \001(\014\"\253\001" +
-      "\n\010Verified\022\023\n\013destination\030\001 \001(\t\022\023\n\013ident" +
-      "ityKey\030\002 \001(\014\022,\n\005state\030\003 \001(\0162\035.signalserv" +
-      "ice.Verified.State\022\023\n\013nullMessage\030\004 \001(\014\"" +
-      "2\n\005State\022\013\n\007DEFAULT\020\000\022\014\n\010VERIFIED\020\001\022\016\n\nU" +
-      "NVERIFIED\020\002\"\316\006\n\013SyncMessage\022-\n\004sent\030\001 \001(" +
-      "\0132\037.signalservice.SyncMessage.Sent\0225\n\010co" +
-      "ntacts\030\002 \001(\0132#.signalservice.SyncMessage" +
-      ".Contacts\0221\n\006groups\030\003 \001(\0132!.signalservic" +
-      "e.SyncMessage.Groups\0223\n\007request\030\004 \001(\0132\".",
-      "signalservice.SyncMessage.Request\022-\n\004rea" +
-      "d\030\005 \003(\0132\037.signalservice.SyncMessage.Read" +
-      "\0223\n\007blocked\030\006 \001(\0132\".signalservice.SyncMe" +
-      "ssage.Blocked\022)\n\010verified\030\007 \001(\0132\027.signal" +
-      "service.Verified\022\017\n\007padding\030\010 \001(\014\032}\n\004Sen" +
-      "t\022\023\n\013destination\030\001 \001(\t\022\021\n\ttimestamp\030\002 \001(" +
-      "\004\022+\n\007message\030\003 \001(\0132\032.signalservice.DataM" +
-      "essage\022 \n\030expirationStartTimestamp\030\004 \001(\004" +
-      "\032S\n\010Contacts\022.\n\004blob\030\001 \001(\0132 .signalservi" +
-      "ce.AttachmentPointer\022\027\n\010complete\030\002 \001(\010:\005",
-      "false\0328\n\006Groups\022.\n\004blob\030\001 \001(\0132 .signalse" +
-      "rvice.AttachmentPointer\032\032\n\007Blocked\022\017\n\007nu" +
-      "mbers\030\001 \003(\t\032|\n\007Request\0225\n\004type\030\001 \001(\0162\'.s" +
-      "ignalservice.SyncMessage.Request.Type\":\n" +
-      "\004Type\022\013\n\007UNKNOWN\020\000\022\014\n\010CONTACTS\020\001\022\n\n\006GROU" +
-      "PS\020\002\022\013\n\007BLOCKED\020\003\032)\n\004Read\022\016\n\006sender\030\001 \001(" +
-      "\t\022\021\n\ttimestamp\030\002 \001(\004\"\257\001\n\021AttachmentPoint" +
-      "er\022\n\n\002id\030\001 \001(\006\022\023\n\013contentType\030\002 \001(\t\022\013\n\003k" +
-      "ey\030\003 \001(\014\022\014\n\004size\030\004 \001(\r\022\021\n\tthumbnail\030\005 \001(" +
-      "\014\022\016\n\006digest\030\006 \001(\014\022\020\n\010fileName\030\007 \001(\t\022\r\n\005f",
-      "lags\030\010 \001(\r\"\032\n\005Flags\022\021\n\rVOICE_MESSAGE\020\001\"\345" +
-      "\001\n\014GroupContext\022\n\n\002id\030\001 \001(\014\022.\n\004type\030\002 \001(" +
-      "\0162 .signalservice.GroupContext.Type\022\014\n\004n" +
-      "ame\030\003 \001(\t\022\017\n\007members\030\004 \003(\t\0220\n\006avatar\030\005 \001" +
-      "(\0132 .signalservice.AttachmentPointer\"H\n\004" +
-      "Type\022\013\n\007UNKNOWN\020\000\022\n\n\006UPDATE\020\001\022\013\n\007DELIVER" +
-      "\020\002\022\010\n\004QUIT\020\003\022\020\n\014REQUEST_INFO\020\004\"\315\001\n\016Conta" +
-      "ctDetails\022\016\n\006number\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022" +
-      "4\n\006avatar\030\003 \001(\0132$.signalservice.ContactD" +
-      "etails.Avatar\022\r\n\005color\030\004 \001(\t\022)\n\010verified",
-      "\030\005 \001(\0132\027.signalservice.Verified\032-\n\006Avata" +
-      "r\022\023\n\013contentType\030\001 \001(\t\022\016\n\006length\030\002 \001(\r\"\262" +
-      "\001\n\014GroupDetails\022\n\n\002id\030\001 \001(\014\022\014\n\004name\030\002 \001(" +
-      "\t\022\017\n\007members\030\003 \003(\t\0222\n\006avatar\030\004 \001(\0132\".sig" +
-      "nalservice.GroupDetails.Avatar\022\024\n\006active" +
-      "\030\005 \001(\010:\004true\032-\n\006Avatar\022\023\n\013contentType\030\001 " +
-      "\001(\t\022\016\n\006length\030\002 \001(\rBE\n.org.whispersystem" +
-      "s.signalservice.internal.pushB\023SignalSer" +
-      "viceProtos"
+      "\013\n\007RECEIPT\020\005\"\315\001\n\007Content\022/\n\013dataMessage\030" +
+      "\001 \001(\0132\032.signalservice.DataMessage\022/\n\013syn" +
+      "cMessage\030\002 \001(\0132\032.signalservice.SyncMessa",
+      "ge\022/\n\013callMessage\030\003 \001(\0132\032.signalservice." +
+      "CallMessage\022/\n\013nullMessage\030\004 \001(\0132\032.signa" +
+      "lservice.NullMessage\"\330\003\n\013CallMessage\022/\n\005" +
+      "offer\030\001 \001(\0132 .signalservice.CallMessage." +
+      "Offer\0221\n\006answer\030\002 \001(\0132!.signalservice.Ca" +
+      "llMessage.Answer\0227\n\ticeUpdate\030\003 \003(\0132$.si" +
+      "gnalservice.CallMessage.IceUpdate\0221\n\006han" +
+      "gup\030\004 \001(\0132!.signalservice.CallMessage.Ha" +
+      "ngup\022-\n\004busy\030\005 \001(\0132\037.signalservice.CallM" +
+      "essage.Busy\032(\n\005Offer\022\n\n\002id\030\001 \001(\004\022\023\n\013desc",
+      "ription\030\002 \001(\t\032)\n\006Answer\022\n\n\002id\030\001 \001(\004\022\023\n\013d" +
+      "escription\030\002 \001(\t\032K\n\tIceUpdate\022\n\n\002id\030\001 \001(" +
+      "\004\022\016\n\006sdpMid\030\002 \001(\t\022\025\n\rsdpMLineIndex\030\003 \001(\r" +
+      "\022\013\n\003sdp\030\004 \001(\t\032\022\n\004Busy\022\n\n\002id\030\001 \001(\004\032\024\n\006Han" +
+      "gup\022\n\n\002id\030\001 \001(\004\"\331\001\n\013DataMessage\022\014\n\004body\030" +
+      "\001 \001(\t\0225\n\013attachments\030\002 \003(\0132 .signalservi" +
+      "ce.AttachmentPointer\022*\n\005group\030\003 \001(\0132\033.si" +
+      "gnalservice.GroupContext\022\r\n\005flags\030\004 \001(\r\022" +
+      "\023\n\013expireTimer\030\005 \001(\r\"5\n\005Flags\022\017\n\013END_SES" +
+      "SION\020\001\022\033\n\027EXPIRATION_TIMER_UPDATE\020\002\"\036\n\013N",
+      "ullMessage\022\017\n\007padding\030\001 \001(\014\"\253\001\n\010Verified" +
+      "\022\023\n\013destination\030\001 \001(\t\022\023\n\013identityKey\030\002 \001" +
+      "(\014\022,\n\005state\030\003 \001(\0162\035.signalservice.Verifi" +
+      "ed.State\022\023\n\013nullMessage\030\004 \001(\014\"2\n\005State\022\013" +
+      "\n\007DEFAULT\020\000\022\014\n\010VERIFIED\020\001\022\016\n\nUNVERIFIED\020" +
+      "\002\"\316\006\n\013SyncMessage\022-\n\004sent\030\001 \001(\0132\037.signal" +
+      "service.SyncMessage.Sent\0225\n\010contacts\030\002 \001" +
+      "(\0132#.signalservice.SyncMessage.Contacts\022" +
+      "1\n\006groups\030\003 \001(\0132!.signalservice.SyncMess" +
+      "age.Groups\0223\n\007request\030\004 \001(\0132\".signalserv",
+      "ice.SyncMessage.Request\022-\n\004read\030\005 \003(\0132\037." +
+      "signalservice.SyncMessage.Read\0223\n\007blocke" +
+      "d\030\006 \001(\0132\".signalservice.SyncMessage.Bloc" +
+      "ked\022)\n\010verified\030\007 \001(\0132\027.signalservice.Ve" +
+      "rified\022\017\n\007padding\030\010 \001(\014\032}\n\004Sent\022\023\n\013desti" +
+      "nation\030\001 \001(\t\022\021\n\ttimestamp\030\002 \001(\004\022+\n\007messa" +
+      "ge\030\003 \001(\0132\032.signalservice.DataMessage\022 \n\030" +
+      "expirationStartTimestamp\030\004 \001(\004\032S\n\010Contac" +
+      "ts\022.\n\004blob\030\001 \001(\0132 .signalservice.Attachm" +
+      "entPointer\022\027\n\010complete\030\002 \001(\010:\005false\0328\n\006G",
+      "roups\022.\n\004blob\030\001 \001(\0132 .signalservice.Atta" +
+      "chmentPointer\032\032\n\007Blocked\022\017\n\007numbers\030\001 \003(" +
+      "\t\032|\n\007Request\0225\n\004type\030\001 \001(\0162\'.signalservi" +
+      "ce.SyncMessage.Request.Type\":\n\004Type\022\013\n\007U" +
+      "NKNOWN\020\000\022\014\n\010CONTACTS\020\001\022\n\n\006GROUPS\020\002\022\013\n\007BL" +
+      "OCKED\020\003\032)\n\004Read\022\016\n\006sender\030\001 \001(\t\022\021\n\ttimes" +
+      "tamp\030\002 \001(\004\"\257\001\n\021AttachmentPointer\022\n\n\002id\030\001" +
+      " \001(\006\022\023\n\013contentType\030\002 \001(\t\022\013\n\003key\030\003 \001(\014\022\014" +
+      "\n\004size\030\004 \001(\r\022\021\n\tthumbnail\030\005 \001(\014\022\016\n\006diges" +
+      "t\030\006 \001(\014\022\020\n\010fileName\030\007 \001(\t\022\r\n\005flags\030\010 \001(\r",
+      "\"\032\n\005Flags\022\021\n\rVOICE_MESSAGE\020\001\"\345\001\n\014GroupCo" +
+      "ntext\022\n\n\002id\030\001 \001(\014\022.\n\004type\030\002 \001(\0162 .signal" +
+      "service.GroupContext.Type\022\014\n\004name\030\003 \001(\t\022" +
+      "\017\n\007members\030\004 \003(\t\0220\n\006avatar\030\005 \001(\0132 .signa" +
+      "lservice.AttachmentPointer\"H\n\004Type\022\013\n\007UN" +
+      "KNOWN\020\000\022\n\n\006UPDATE\020\001\022\013\n\007DELIVER\020\002\022\010\n\004QUIT" +
+      "\020\003\022\020\n\014REQUEST_INFO\020\004\"\315\001\n\016ContactDetails\022" +
+      "\016\n\006number\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\0224\n\006avatar\030" +
+      "\003 \001(\0132$.signalservice.ContactDetails.Ava" +
+      "tar\022\r\n\005color\030\004 \001(\t\022)\n\010verified\030\005 \001(\0132\027.s",
+      "ignalservice.Verified\032-\n\006Avatar\022\023\n\013conte" +
+      "ntType\030\001 \001(\t\022\016\n\006length\030\002 \001(\r\"\262\001\n\014GroupDe" +
+      "tails\022\n\n\002id\030\001 \001(\014\022\014\n\004name\030\002 \001(\t\022\017\n\007membe" +
+      "rs\030\003 \003(\t\0222\n\006avatar\030\004 \001(\0132\".signalservice" +
+      ".GroupDetails.Avatar\022\024\n\006active\030\005 \001(\010:\004tr" +
+      "ue\032-\n\006Avatar\022\023\n\013contentType\030\001 \001(\t\022\016\n\006len" +
+      "gth\030\002 \001(\rBE\n.org.whispersystems.signalse" +
+      "rvice.internal.pushB\023SignalServiceProtos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
