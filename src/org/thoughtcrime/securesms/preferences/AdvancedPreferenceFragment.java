@@ -21,6 +21,7 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import org.thoughtcrime.securesms.ApplicationPreferencesActivity;
 import org.thoughtcrime.securesms.LogSubmitActivity;
+import org.thoughtcrime.securesms.MurmurSettingsActivity;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.RegistrationActivity;
 import org.thoughtcrime.securesms.contacts.ContactAccessor;
@@ -40,6 +41,7 @@ public class AdvancedPreferenceFragment extends PreferenceFragment {
 
   private static final String PUSH_MESSAGING_PREF   = "pref_toggle_push_messaging";
   private static final String SUBMIT_DEBUG_LOG_PREF = "pref_submit_debug_logs";
+  private static final String MURMUR_SETTINGS_PREF = "pref_murmur_settings";
 
   private static final int PICK_IDENTITY_CONTACT = 1;
 
@@ -56,6 +58,10 @@ public class AdvancedPreferenceFragment extends PreferenceFragment {
     Preference submitDebugLog = this.findPreference(SUBMIT_DEBUG_LOG_PREF);
     submitDebugLog.setOnPreferenceClickListener(new SubmitDebugLogListener());
     submitDebugLog.setSummary(getVersion(getActivity()));
+
+    Preference murmurSettings = this.findPreference(MURMUR_SETTINGS_PREF);
+    murmurSettings.setOnPreferenceClickListener(new MurmurSettingsListener());
+    murmurSettings.setSummary(R.string.murmur_settings_details);
   }
 
   @Override
@@ -150,6 +156,15 @@ public class AdvancedPreferenceFragment extends PreferenceFragment {
       startActivity(intent);
       return true;
     }
+  }
+
+  private class MurmurSettingsListener implements Preference.OnPreferenceClickListener {
+      @Override
+      public boolean onPreferenceClick(Preference preference) {
+          final Intent intent = new Intent(getActivity(), MurmurSettingsActivity.class);
+          startActivity(intent);
+          return true;
+      }
   }
 
   private class PushMessagingClickListener implements Preference.OnPreferenceChangeListener {

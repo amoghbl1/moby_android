@@ -13,4 +13,7 @@
 
     <Preference android:key="pref_submit_debug_logs"
                 android:title="@string/preferences__submit_debug_log"/>
+
+    <Preference android:key="pref_murmur_settings"
+                android:title="@string/preferences__murmur_settings" />
 </PreferenceScreen>

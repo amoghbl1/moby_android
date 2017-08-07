@@ -1406,7 +1406,18 @@
     <string name="UnverifiedSendDialog_send_message">Send message?</string>
     <string name="UnverifiedSendDialog_send">Send</string>
 
-
+    <!-- Murmur strings-->
+    <string name="pseudonym_title">Murmur Name</string>
+    <string name="preferences__murmur_settings">Murmur Settings</string>
+    <string name="qr_title">QR Code</string>
+    <string name="qr_code_prefix" translatable="false">Murmur:</string>
+    <string name="select_profile_title">Choose a profile</string>
+    <string name="profile_flexible">More features / less security</string>
+    <string name="profile_strict">More security / less features</string>
+    <string name="profile_custom">Custom</string>
+    <string name="profile_custom_annotation">Recommended only for advanced users</string>
+    <string name="AndroidManifest__murmur_settings">Configure Murmur Settings</string>
+    <string name="murmur_settings_details">Configure Murmur here</string>
     <!-- EOF -->
 
 </resources>

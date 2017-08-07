@@ -66,4 +66,11 @@
     <dimen name="onboarding_subtitle_size">20sp</dimen>
 
     <dimen name="scribble_stroke_size">3dp</dimen>
+
+    <!-- Murmur stuff-->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <dimen name="settings_fragment_margin">15dp</dimen>
+    <dimen name="window_size">250dp</dimen>
+
 </resources>
