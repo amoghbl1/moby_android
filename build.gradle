@@ -71,6 +71,12 @@ dependencies {
     compile 'com.googlecode.libphonenumber:libphonenumber:8.7.1'
     compile 'com.squareup.okhttp3:okhttp:3.8.1'
 
+    // Things needed by LibNearbyShare
+    compile 'com.squareup.okhttp:okhttp:2.1.0'
+    compile 'com.squareup.okio:okio:1.1.0'
+    compile 'com.nanohttpd:nanohttpd-webserver:2.2+'
+    compile 'de.greenrobot:eventbus:2.2.0'
+
     compile 'org.whispersystems:webrtc-android:M59-S1'
 
     compile "me.leolin:ShortcutBadger:1.1.16"
@@ -215,7 +221,7 @@ android {
         versionCode 275
         versionName "4.8.1"
 
-        minSdkVersion 9
+        minSdkVersion 14
         targetSdkVersion 22
         multiDexEnabled true
 
