@@ -125,6 +125,7 @@ import org.thoughtcrime.securesms.mms.OutgoingMediaMessage;
 import org.thoughtcrime.securesms.mms.OutgoingSecureMediaMessage;
 import org.thoughtcrime.securesms.mms.Slide;
 import org.thoughtcrime.securesms.mms.SlideDeck;
+import org.thoughtcrime.securesms.murmur.backend.FriendStore;
 import org.thoughtcrime.securesms.notifications.MarkReadReceiver;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.providers.PersistentBlobProvider;
@@ -1094,12 +1095,18 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
     final SettableFuture<Boolean> future = new SettableFuture<>();
 
     new AsyncTask<Recipients, Void, Pair<IdentityRecordList, String>>() {
+
+      private boolean inFriendStore = false;
+
       @Override
       protected @NonNull Pair<IdentityRecordList, String> doInBackground(Recipients... params) {
         try {
           IdentityDatabase   identityDatabase   = DatabaseFactory.getIdentityDatabase(ConversationActivity.this);
           IdentityRecordList identityRecordList = new IdentityRecordList();
           Recipients         recipients         = params[0];
+          FriendStore        friendStore        = FriendStore.getInstance(ConversationActivity.this);
+
+          inFriendStore = friendStore.hasFriend(recipients.getPrimaryRecipient().getNumber());
 
           if (recipients.isGroupRecipient()) {
             recipients = DatabaseFactory.getGroupDatabase(ConversationActivity.this)
@@ -1126,6 +1133,7 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
       @Override
       protected void onPostExecute(@NonNull Pair<IdentityRecordList, String> result) {
         Log.w(TAG, "Got identity records: " + result.first.isUnverified());
+        Log.w(TAG, "Herd record status: " + this.inFriendStore);
         identityRecords.replaceWith(result.first);
 
         if (result.second != null) {
@@ -1139,6 +1147,7 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
         }
 
         titleView.setVerified(isSecureText && identityRecords.isVerified());
+        titleView.setHerd(this.inFriendStore);
 
         future.set(true);
       }

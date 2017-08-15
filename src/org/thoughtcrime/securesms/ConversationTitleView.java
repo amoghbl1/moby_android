@@ -20,6 +20,7 @@ public class ConversationTitleView extends LinearLayout {
   private TextView  title;
   private TextView  subtitle;
   private ImageView verified;
+  private ImageView herd;
 
   public ConversationTitleView(Context context) {
     this(context, null);
@@ -37,6 +38,7 @@ public class ConversationTitleView extends LinearLayout {
     this.title    = (TextView)  findViewById(R.id.title);
     this.subtitle = (TextView)  findViewById(R.id.subtitle);
     this.verified = (ImageView) findViewById(R.id.verified_indicator);
+    this.herd     = (ImageView) findViewById(R.id.herd_indicator);
 
     ViewUtil.setTextViewGravityStart(this.title, getContext());
     ViewUtil.setTextViewGravityStart(this.subtitle, getContext());
@@ -58,6 +60,10 @@ public class ConversationTitleView extends LinearLayout {
 
   public void setVerified(boolean verified) {
     this.verified.setVisibility(verified ? View.VISIBLE : View.GONE);
+  }
+
+  public void setHerd(boolean herd) {
+    this.herd.setVisibility(herd ? View.VISIBLE : View.GONE);
   }
 
   private void setComposeTitle() {
