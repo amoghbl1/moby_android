@@ -6,6 +6,8 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.Pair;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+
 import org.thoughtcrime.securesms.ApplicationContext;
 import org.thoughtcrime.securesms.attachments.DatabaseAttachment;
 import org.thoughtcrime.securesms.attachments.PointerAttachment;
@@ -33,6 +35,7 @@ import org.thoughtcrime.securesms.mms.OutgoingExpirationUpdateMessage;
 import org.thoughtcrime.securesms.mms.OutgoingMediaMessage;
 import org.thoughtcrime.securesms.mms.OutgoingSecureMediaMessage;
 import org.thoughtcrime.securesms.murmur.backend.FriendStore;
+import org.thoughtcrime.securesms.murmur.objects.HerdProtos;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.recipients.RecipientFactory;
 import org.thoughtcrime.securesms.recipients.Recipients;
@@ -82,6 +85,7 @@ import org.whispersystems.signalservice.api.messages.multidevice.VerifiedMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -156,11 +160,23 @@ public class PushDecryptJob extends ContextJob {
       if(envelope.getType() == SignalServiceProtos.Envelope.Type.UNKNOWN_VALUE) {
         // Herd message handling
         SignalServiceDataMessage message = content.getDataMessage().get();
-        String herdKey = message.getBody().get();
-        Log.d(TAG, "Got Herd Message from " + envelope.getSource() + " with Key: " + herdKey);
+        HerdProtos.HandshakeMessage herdMessage;
+
+        try {
+          herdMessage = HerdProtos.HandshakeMessage
+                  .parseFrom(Base64.decode(message.getBody().get()));
+        } catch (InvalidProtocolBufferException e) {
+          Log.e(TAG, e.getMessage());
+          return;
+        } catch (IOException e) {
+          Log.e(TAG, e.getMessage());
+          return;
+        }
+
+        Log.d(TAG, "Got Herd Message from " + envelope.getSource() + " with Key: " + herdMessage.getPublicDevieID());
 
         FriendStore friendStore = FriendStore.getInstance(context);
-        Boolean added = friendStore.addFriend(envelope.getSource(), herdKey, FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource());
+        Boolean added = friendStore.addFriend(envelope.getSource(), herdMessage.getPublicDevieID(), FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource());
 
         if(added) {
           // We reply if it's a new entry, they do the same and the second time this dies.

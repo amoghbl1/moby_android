@@ -9,8 +9,10 @@ import org.thoughtcrime.securesms.database.TextSecureDirectory;
 import org.thoughtcrime.securesms.dependencies.InjectableType;
 import org.thoughtcrime.securesms.murmur.backend.FriendStore;
 import org.thoughtcrime.securesms.murmur.backend.StorageBase;
+import org.thoughtcrime.securesms.murmur.objects.HerdProtos;
 import org.thoughtcrime.securesms.transport.InsecureFallbackApprovalException;
 import org.thoughtcrime.securesms.transport.RetryLaterException;
+import org.thoughtcrime.securesms.util.Base64;
 import org.thoughtcrime.securesms.util.Util;
 import org.whispersystems.libsignal.util.guava.Optional;
 import org.whispersystems.signalservice.api.SignalServiceMessageSender;
@@ -40,14 +42,15 @@ public class SendHerdHandshakeJob extends PushSendJob implements InjectableType 
 
   @Inject transient SignalMessageSenderFactory messageSenderFactory;
 
-  private String herdHandshakeMessage = null;
+  private HerdProtos.HandshakeMessage herdHandshakeMessage;
 
   private String destination = null;
 
   public SendHerdHandshakeJob(Context context, String destination) {
     super(context, constructParameters(context, destination));
     FriendStore friendStore = FriendStore.getInstance(context);
-    this.herdHandshakeMessage = friendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT);
+    this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
+            .setPublicDevieID(friendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT)).build();
     this.destination = destination;
     // Improves log readability
     TAG += ": " + this.destination;
@@ -117,7 +120,7 @@ public class SendHerdHandshakeJob extends PushSendJob implements InjectableType 
 
       SignalServiceDataMessage   textSecureMessage = SignalServiceDataMessage.newBuilder()
                                                                              // .withTimestamp(now)
-                                                                             .withBody(this.herdHandshakeMessage)
+                                                                             .withBody(Base64.encodeBytes(this.herdHandshakeMessage.toByteArray()))
                                                                              .withExpiration(0)
                                                                              .asEndSessionMessage(false)
                                                                              .build();
