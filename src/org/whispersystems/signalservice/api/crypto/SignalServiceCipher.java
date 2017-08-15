@@ -21,6 +21,7 @@ import org.whispersystems.libsignal.NoSessionException;
 import org.whispersystems.libsignal.SessionCipher;
 import org.whispersystems.libsignal.SignalProtocolAddress;
 import org.whispersystems.libsignal.UntrustedIdentityException;
+import org.whispersystems.libsignal.logging.SignalProtocolLogger;
 import org.whispersystems.libsignal.protocol.CiphertextMessage;
 import org.whispersystems.libsignal.protocol.PreKeySignalMessage;
 import org.whispersystems.libsignal.protocol.SignalMessage;
@@ -82,7 +83,6 @@ public class SignalServiceCipher {
   public OutgoingPushMessage encrypt(SignalProtocolAddress destination, byte[] unpaddedMessage, boolean silent)
       throws UntrustedIdentityException
   {
-    Log.d("Encrypt", "Encrypt called!");
     SessionCipher        sessionCipher        = new SessionCipher(signalProtocolStore, destination);
     PushTransportDetails transportDetails     = new PushTransportDetails(sessionCipher.getSessionVersion());
     CiphertextMessage    message              = sessionCipher.encrypt(transportDetails.getPaddedMessageBody(unpaddedMessage));
@@ -98,6 +98,18 @@ public class SignalServiceCipher {
     }
 
     return new OutgoingPushMessage(type, destination.getDeviceId(), remoteRegistrationId, body, silent);
+  }
+
+  public OutgoingPushMessage getHerdMessage(SignalProtocolAddress destination, byte[] unpaddedMessage, boolean silent)
+          throws UntrustedIdentityException
+  {
+    SessionCipher        sessionCipher        = new SessionCipher(signalProtocolStore, destination);
+    PushTransportDetails transportDetails     = new PushTransportDetails(sessionCipher.getSessionVersion());
+    CiphertextMessage    message              = sessionCipher.encrypt(transportDetails.getPaddedMessageBody(unpaddedMessage));
+    int                  remoteRegistrationId = sessionCipher.getRemoteRegistrationId();
+    String               body                 = Base64.encodeBytes(message.serialize());
+
+    return new OutgoingPushMessage(Type.UNKNOWN_VALUE, destination.getDeviceId(), remoteRegistrationId, body, silent);
   }
 
   /**
@@ -123,7 +135,7 @@ public class SignalServiceCipher {
     try {
       SignalServiceContent content = new SignalServiceContent();
 
-      if (envelope.hasLegacyMessage()) {
+      if (envelope.hasLegacyMessage() ) {
         DataMessage message = DataMessage.parseFrom(decrypt(envelope, envelope.getLegacyMessage()));
         content = new SignalServiceContent(createSignalServiceMessage(envelope, message));
       } else if (envelope.hasContent()) {
@@ -159,7 +171,30 @@ public class SignalServiceCipher {
     } else if (envelope.isSignalMessage()) {
       paddedMessage = sessionCipher.decrypt(new SignalMessage(ciphertext));
     } else {
-      throw new InvalidMessageException("Unknown type: " + envelope.getType());
+      return decryptHerdMessage(sourceAddress, sessionCipher, envelope, ciphertext);
+      // throw new InvalidMessageException("Unknown type: " + envelope.getType());
+    }
+
+    PushTransportDetails transportDetails = new PushTransportDetails(sessionCipher.getSessionVersion());
+    return transportDetails.getStrippedPaddingMessageBody(paddedMessage);
+  }
+
+  private byte[] decryptHerdMessage(SignalProtocolAddress sourceAddress, SessionCipher sessionCipher,
+                                    SignalServiceEnvelope envelope, byte[] ciphertext)
+          throws InvalidVersionException, InvalidMessageException, InvalidKeyException,
+          DuplicateMessageException, InvalidKeyIdException, UntrustedIdentityException,
+          LegacyMessageException, NoSessionException
+  {
+    byte[] paddedMessage;
+
+    try {
+      paddedMessage = sessionCipher.decrypt(new PreKeySignalMessage(ciphertext));
+    } catch (InvalidMessageException e) {
+      try {
+        paddedMessage = sessionCipher.decrypt(new SignalMessage(ciphertext));
+      } catch (InvalidMessageException e1) {
+          throw  new InvalidMessageException("Not herd, actually unknown! " + envelope.getType());
+      }
     }
 
     PushTransportDetails transportDetails = new PushTransportDetails(sessionCipher.getSessionVersion());

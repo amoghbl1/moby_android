@@ -9,9 +9,11 @@ import org.thoughtcrime.securesms.database.MessagingDatabase;
 import org.thoughtcrime.securesms.database.MessagingDatabase.SyncMessageId;
 import org.thoughtcrime.securesms.database.NotInDirectoryException;
 import org.thoughtcrime.securesms.database.TextSecureDirectory;
+import org.thoughtcrime.securesms.murmur.backend.FriendStore;
 import org.thoughtcrime.securesms.recipients.RecipientFactory;
 import org.thoughtcrime.securesms.recipients.Recipients;
 import org.thoughtcrime.securesms.service.KeyCachingService;
+import org.thoughtcrime.securesms.util.Base64;
 import org.whispersystems.jobqueue.JobManager;
 import org.whispersystems.jobqueue.JobParameters;
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope;
@@ -42,7 +44,31 @@ public abstract class PushReceivedJob extends ContextJob {
     } else if (envelope.isPreKeySignalMessage() || envelope.isSignalMessage()) {
       handleMessage(envelope, sendExplicitReceipt);
     } else {
+      // Check for Herd.
+      String herdMessage = envelope.toString();
+      Log.d(TAG, "Herd envelope! " + envelope.getContent().toString() + " " + envelope.getType());
       Log.w(TAG, "Received envelope of unknown type: " + envelope.getType());
+      handleHerdMessage(envelope);
+    }
+  }
+
+  private void handleHerdMessage(SignalServiceEnvelope envelope) {
+    Recipients recipients = RecipientFactory.getRecipientsFromString(context, envelope.getSource(), false);
+    JobManager jobManager = ApplicationContext.getInstance(context).getJobManager();
+
+    FriendStore friendStore = FriendStore.getInstance(context);
+
+    /*
+    jobManager.add(new DeliveryReceiptJob(context, envelope.getSource(),
+            envelope.getTimestamp(),
+            envelope.getRelay()));
+    */
+
+    if (!recipients.isBlocked()) {
+      long messageId = DatabaseFactory.getPushDatabase(context).insert(envelope);
+      jobManager.add(new PushDecryptJob(context, messageId, envelope.getSource()));
+    } else {
+      Log.w(TAG, "*** Received blocked herd handshake message, ignoring...");
     }
   }
 

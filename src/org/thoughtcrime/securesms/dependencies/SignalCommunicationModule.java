@@ -26,6 +26,7 @@ import org.thoughtcrime.securesms.jobs.RefreshPreKeysJob;
 import org.thoughtcrime.securesms.jobs.RequestGroupInfoJob;
 import org.thoughtcrime.securesms.jobs.RetrieveProfileJob;
 import org.thoughtcrime.securesms.jobs.RotateSignedPreKeyJob;
+import org.thoughtcrime.securesms.jobs.SendHerdHandshakeJob;
 import org.thoughtcrime.securesms.push.SecurityEventListener;
 import org.thoughtcrime.securesms.push.SignalServiceNetworkAccess;
 import org.thoughtcrime.securesms.service.MessageRetrievalService;
@@ -45,6 +46,7 @@ import dagger.Provides;
                                      DeliveryReceiptJob.class,
                                      PushGroupSendJob.class,
                                      PushTextSendJob.class,
+                                     SendHerdHandshakeJob.class,
                                      PushMediaSendJob.class,
                                      AttachmentDownloadJob.class,
                                      RefreshPreKeysJob.class,

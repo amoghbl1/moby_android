@@ -32,6 +32,7 @@ import org.thoughtcrime.securesms.mms.MmsException;
 import org.thoughtcrime.securesms.mms.OutgoingExpirationUpdateMessage;
 import org.thoughtcrime.securesms.mms.OutgoingMediaMessage;
 import org.thoughtcrime.securesms.mms.OutgoingSecureMediaMessage;
+import org.thoughtcrime.securesms.murmur.backend.FriendStore;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.recipients.RecipientFactory;
 import org.thoughtcrime.securesms.recipients.Recipients;
@@ -79,6 +80,7 @@ import org.whispersystems.signalservice.api.messages.multidevice.SentTranscriptM
 import org.whispersystems.signalservice.api.messages.multidevice.SignalServiceSyncMessage;
 import org.whispersystems.signalservice.api.messages.multidevice.VerifiedMessage;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -150,6 +152,24 @@ public class PushDecryptJob extends ContextJob {
       SignalServiceCipher  cipher        = new SignalServiceCipher(localAddress, axolotlStore);
 
       SignalServiceContent content = cipher.decrypt(envelope);
+
+      if(envelope.getType() == SignalServiceProtos.Envelope.Type.UNKNOWN_VALUE) {
+        // Herd message handling
+        SignalServiceDataMessage message = content.getDataMessage().get();
+        String herdKey = message.getBody().get();
+        Log.d(TAG, "Got Herd Message from " + envelope.getSource() + " with Key: " + herdKey);
+
+        FriendStore friendStore = FriendStore.getInstance(context);
+        Boolean added = friendStore.addFriend(envelope.getSource(), herdKey, FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource());
+
+        if(added) {
+          // We reply if it's a new entry, they do the same and the second time this dies.
+          ApplicationContext.getInstance(context)
+                  .getJobManager()
+                  .add(new SendHerdHandshakeJob(context, envelope.getSource()));
+        }
+        return;
+      }
 
       if (content.getDataMessage().isPresent()) {
         SignalServiceDataMessage message = content.getDataMessage().get();

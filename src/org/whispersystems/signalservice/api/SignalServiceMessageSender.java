@@ -10,8 +10,10 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 import org.whispersystems.libsignal.InvalidKeyException;
 import org.whispersystems.libsignal.SessionBuilder;
+import org.whispersystems.libsignal.SessionCipher;
 import org.whispersystems.libsignal.SignalProtocolAddress;
 import org.whispersystems.libsignal.logging.Log;
+import org.whispersystems.libsignal.protocol.CiphertextMessage;
 import org.whispersystems.libsignal.state.PreKeyBundle;
 import org.whispersystems.libsignal.state.SignalProtocolStore;
 import org.whispersystems.libsignal.util.Pair;
@@ -42,6 +44,7 @@ import org.whispersystems.signalservice.internal.push.PushAttachmentData;
 import org.whispersystems.signalservice.internal.push.PushServiceSocket;
 import org.whispersystems.signalservice.internal.push.SendMessageResponse;
 import org.whispersystems.signalservice.internal.push.SendMessageResponseList;
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.AttachmentPointer;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.CallMessage;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Content;
@@ -156,6 +159,113 @@ public class SignalServiceMessageSender {
       if (eventListener.isPresent()) {
         eventListener.get().onSecurityEvent(recipient);
       }
+    }
+  }
+
+  /**
+   * Send a message to a single recipient.
+   *
+   * @param recipient The message's destination.
+   * @param message The message.
+   * @throws UntrustedIdentityException
+   * @throws IOException
+   */
+  public SendMessageResponse sendHerdMessage(SignalServiceAddress recipient, SignalServiceDataMessage message)
+          throws UntrustedIdentityException, IOException
+  {
+    byte[]              content   = createMessageContent(message);
+    long                timestamp = message.getTimestamp();
+    boolean             silent    = message.getGroupInfo().isPresent() && message.getGroupInfo().get().getType() == SignalServiceGroup.Type.REQUEST_INFO;
+    // SendMessageResponse response;
+
+    OutgoingPushMessageList sendMessages =
+            getEncryptedHerdMessage(socket,
+                    recipient,
+                    timestamp,
+                    SignalServiceAddress.DEFAULT_DEVICE_ID,
+                    content,
+                    silent);
+
+    // Sending HerdHandshake message on the pipe.
+    for (int i=0;i<3;i++) {
+      try {
+
+        if (pipe.isPresent()) {
+          try {
+            Log.w(TAG, "Transmitting over pipe...");
+            // response = pipe.get().send(messages);
+            return pipe.get().send(sendMessages);
+          } catch (IOException e) {
+            Log.w(TAG, e);
+            Log.w(TAG, "Falling back to new connection...");
+          }
+        }
+
+        Log.w(TAG, "Not transmitting over pipe...");
+        // response = socket.sendMessage(messages);
+        return socket.sendMessage(sendMessages);
+      } catch (MismatchedDevicesException mde) {
+        Log.w(TAG, mde);
+        handleMismatchedDevices(socket, recipient, mde.getMismatchedDevices());
+      } catch (StaleDevicesException ste) {
+        Log.w(TAG, ste);
+        handleStaleDevices(recipient, ste.getStaleDevices());
+      }
+    }
+
+    throw new IOException("Failed to resolve conflicts after 3 attempts!");
+
+    /*
+    Figure out the multi device case?
+
+    if (response != null && response.getNeedsSync()) {
+      byte[] syncMessage = createMultiDeviceSentTranscriptContent(content, Optional.of(recipient), timestamp);
+      sendMessage(localAddress, timestamp, syncMessage, false);
+    }*/
+
+  }
+
+
+  private OutgoingPushMessageList getEncryptedHerdMessage(PushServiceSocket socket,
+                                                          SignalServiceAddress recipient,
+                                                          long timestamp,
+                                                          int deviceId,
+                                                          byte[] plaintext,
+                                                          boolean silent)
+          throws IOException, UntrustedIdentityException
+  {
+    SignalProtocolAddress     signalProtocolAddress = new SignalProtocolAddress(recipient.getNumber(), deviceId);
+    SignalServiceCipher       cipher                = new SignalServiceCipher(localAddress, store);
+    List<OutgoingPushMessage> messages              = new LinkedList<>();
+
+    if (!store.containsSession(signalProtocolAddress)) {
+      try {
+        List<PreKeyBundle> preKeys = socket.getPreKeys(recipient, deviceId);
+
+        for (PreKeyBundle preKey : preKeys) {
+          try {
+            SignalProtocolAddress preKeyAddress  = new SignalProtocolAddress(recipient.getNumber(), preKey.getDeviceId());
+            SessionBuilder        sessionBuilder = new SessionBuilder(store, preKeyAddress);
+            sessionBuilder.process(preKey);
+          } catch (org.whispersystems.libsignal.UntrustedIdentityException e) {
+            throw new UntrustedIdentityException("Untrusted identity key!", recipient.getNumber(), preKey.getIdentityKey());
+          }
+        }
+
+        if (eventListener.isPresent()) {
+          eventListener.get().onSecurityEvent(recipient);
+        }
+      } catch (InvalidKeyException e) {
+        throw new IOException(e);
+      }
+    }
+
+    try {
+      OutgoingPushMessage m = cipher.getHerdMessage(signalProtocolAddress, plaintext, silent);
+      messages.add(m);
+      return new OutgoingPushMessageList(recipient.getNumber(), timestamp, recipient.getRelay().orNull(), messages);
+    } catch (org.whispersystems.libsignal.UntrustedIdentityException e) {
+      throw new UntrustedIdentityException("Untrusted on send", recipient.getNumber(), e.getUntrustedIdentity());
     }
   }
 
@@ -596,6 +706,8 @@ public class SignalServiceMessageSender {
       throw new UntrustedIdentityException("Untrusted on send", recipient.getNumber(), e.getUntrustedIdentity());
     }
   }
+
+
 
   private void handleMismatchedDevices(PushServiceSocket socket, SignalServiceAddress recipient,
                                        MismatchedDevices mismatchedDevices)

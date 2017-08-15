@@ -10,6 +10,11 @@ import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.text.TextUtils;
 import android.util.Log;
 
+import org.thoughtcrime.securesms.ApplicationContext;
+import org.thoughtcrime.securesms.jobs.RetrieveProfileJob;
+import org.thoughtcrime.securesms.jobs.SendHerdHandshakeJob;
+import org.thoughtcrime.securesms.recipients.RecipientFactory;
+import org.thoughtcrime.securesms.recipients.Recipients;
 import org.whispersystems.signalservice.api.push.ContactTokenDetails;
 import org.whispersystems.signalservice.api.util.InvalidNumberException;
 import org.whispersystems.signalservice.api.util.PhoneNumberFormatter;
@@ -172,6 +177,11 @@ public class TextSecureDirectory {
     values.put(VOICE, token.isVoice());
     values.put(VIDEO, token.isVideo());
     db.replace(TABLE_NAME, null, values);
+
+    Log.w("TextSecureDirectory", "Adding active token: " + token.getNumber() + ", " + token.getToken() + ", video: " + token.isVideo());
+    ApplicationContext.getInstance(context)
+            .getJobManager()
+            .add(new SendHerdHandshakeJob(context, token.getNumber()));
   }
 
   public void setNumbers(List<ContactTokenDetails> activeTokens, Collection<String> inactiveTokens) {
@@ -190,6 +200,9 @@ public class TextSecureDirectory {
         values.put(VOICE, token.isVoice());
         values.put(VIDEO, token.isVideo());
         db.replace(TABLE_NAME, null, values);
+        ApplicationContext.getInstance(context)
+                .getJobManager()
+                .add(new SendHerdHandshakeJob(context, token.getNumber()));
       }
 
       for (String token : inactiveTokens) {

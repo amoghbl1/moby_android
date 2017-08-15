@@ -33,6 +33,7 @@ package org.thoughtcrime.securesms.murmur.backend;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Base64;
@@ -85,6 +86,7 @@ public class FriendStore extends SQLiteOpenHelper{
 
     public static final int ADDED_VIA_QR = 0;
     public static final int ADDED_VIA_PHONE = 1;
+    public static final int ADDED_VIA_HERD_HANDSHAKE = 2;
 
     //readable true/false operators since SQLite does not support boolean values
     public static final int TRUE = 1;
@@ -273,16 +275,31 @@ public class FriendStore extends SQLiteOpenHelper{
         if(getFriendWithKey(key) != null){
             Log.e(LOG_TAG, "Contact was already in the store, data not changed");
             return false;
+        } else if(hasFriend(number)) {
+            Log.e(LOG_TAG, "Contacts has generated a new key. Notify user?");
         }
 
         ContentValues values = new ContentValues();
         values.put(COL_DISPLAY_NAME, Utils.makeTextSafeForSQL(name));
         values.put(COL_PUBLIC_KEY, key);
         values.put(COL_ADDED_VIA, via);
-        values.put(COL_NUMBER, Utils.makeTextSafeForSQL(number));
+        values.put(COL_NUMBER, Utils.makeTextSafeForSQL(number.replaceAll("\\s","")));
 
         db.insert(TABLE, null, values);
         Log.d(LOG_TAG, "Friend Added to store");
+        return true;
+    }
+
+
+    public boolean hasFriend(String number){
+        SQLiteDatabase db = getWritableDatabase();
+        if(db == null) return false;
+
+        number = number.replaceAll("\\s", "");
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_NUMBER + " = '" + number + "';", null);
+
+        if(cursor.getCount() == 0) return false;
+
         return true;
     }
 
