@@ -4,6 +4,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import org.thoughtcrime.securesms.murmur.backend.FriendStore;
 import org.thoughtcrime.securesms.util.CharacterCalculator;
 import org.thoughtcrime.securesms.util.MmsCharacterCalculator;
 import org.thoughtcrime.securesms.util.PushCharacterCalculator;
@@ -135,6 +136,12 @@ public class TransportOptions {
                                     context.getResources().getColor(R.color.textsecure_primary),
                                     context.getString(R.string.ConversationActivity_transport_signal),
                                     context.getString(R.string.conversation_activity__type_message_push),
+                                    new PushCharacterCalculator()));
+
+    results.add(new TransportOption(Type.HERD, R.drawable.herd_present,
+                                    context.getResources().getColor(R.color.textsecure_primary),
+                                    "Herd",
+                                    "Herd message",
                                     new PushCharacterCalculator()));
 
     return results;

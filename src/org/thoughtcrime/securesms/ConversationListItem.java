@@ -28,6 +28,7 @@ import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -38,6 +39,7 @@ import org.thoughtcrime.securesms.components.FromTextView;
 import org.thoughtcrime.securesms.components.ThumbnailView;
 import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.database.model.ThreadRecord;
+import org.thoughtcrime.securesms.murmur.backend.FriendStore;
 import org.thoughtcrime.securesms.recipients.Recipients;
 import org.thoughtcrime.securesms.util.DateUtils;
 import org.thoughtcrime.securesms.util.ResUtil;
@@ -77,6 +79,7 @@ public class ConversationListItem extends RelativeLayout
 
   private boolean         read;
   private AvatarImageView contactPhotoImage;
+  private ImageView       herdIndicator;
   private ThumbnailView   thumbnailView;
 
   private final @DrawableRes int readBackground;
@@ -104,6 +107,7 @@ public class ConversationListItem extends RelativeLayout
     this.deliveryStatusIndicator = (DeliveryStatusView) findViewById(R.id.delivery_status);
     this.alertView               = (AlertView)          findViewById(R.id.indicators_parent);
     this.contactPhotoImage       = (AvatarImageView)    findViewById(R.id.contact_photo_image);
+    this.herdIndicator           = (ImageView)          findViewById(R.id.herd_indicator);
     this.thumbnailView           = (ThumbnailView)      findViewById(R.id.thumbnail);
     this.archivedView            = ViewUtil.findById(this, R.id.archived);
     thumbnailView.setClickable(false);
@@ -121,6 +125,12 @@ public class ConversationListItem extends RelativeLayout
     this.read             = thread.isRead();
     this.distributionType = thread.getDistributionType();
     this.lastSeen         = thread.getLastSeen();
+
+
+    FriendStore friendStore = FriendStore.getInstance(getContext());
+    if(friendStore.hasFriend(this.recipients.getPrimaryRecipient().getNumber())) {
+      this.herdIndicator.setVisibility(VISIBLE);
+    }
 
     this.recipients.addListener(this);
     this.fromView.setText(recipients, read);

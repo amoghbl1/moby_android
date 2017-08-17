@@ -11,7 +11,8 @@ public class TransportOption {
 
   public enum Type {
     SMS,
-    TEXTSECURE
+    TEXTSECURE,
+    HERD
   }
 
   private final int                             drawable;

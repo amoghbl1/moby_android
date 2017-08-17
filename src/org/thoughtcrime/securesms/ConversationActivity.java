@@ -925,9 +925,11 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
     boolean isMediaMessage = !recipients.isSingleRecipient() || attachmentManager.isAttachmentPresent();
 
     sendButton.resetAvailableTransports(isMediaMessage);
+    FriendStore friendStore = FriendStore.getInstance(getApplicationContext());
 
-    if (!isSecureText)                 sendButton.disableTransport(Type.TEXTSECURE);
-    if (recipients.isGroupRecipient()) sendButton.disableTransport(Type.SMS);
+    if (!isSecureText)                                                                                            sendButton.disableTransport(Type.TEXTSECURE);
+    if (recipients.isGroupRecipient())                                                                            sendButton.disableTransport(Type.SMS);
+    if (!(friendStore.hasFriend(recipients.getPrimaryRecipient().getNumber()) && recipients.isSingleRecipient())) sendButton.disableTransport(Type.HERD);
 
     if (isSecureText) sendButton.setDefaultTransport(Type.TEXTSECURE);
     else              sendButton.setDefaultTransport(Type.SMS);

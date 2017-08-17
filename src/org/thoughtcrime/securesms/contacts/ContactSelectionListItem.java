@@ -5,11 +5,13 @@ import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.components.AvatarImageView;
+import org.thoughtcrime.securesms.murmur.backend.FriendStore;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientFactory;
 import org.thoughtcrime.securesms.recipients.Recipients;
@@ -18,6 +20,7 @@ import org.thoughtcrime.securesms.util.ViewUtil;
 public class ContactSelectionListItem extends LinearLayout implements Recipients.RecipientsModifiedListener {
 
   private AvatarImageView contactPhotoImage;
+  private ImageView       herdIndicator;
   private TextView        numberView;
   private TextView        nameView;
   private TextView        labelView;
@@ -39,6 +42,7 @@ public class ContactSelectionListItem extends LinearLayout implements Recipients
   protected void onFinishInflate() {
     super.onFinishInflate();
     this.contactPhotoImage = (AvatarImageView) findViewById(R.id.contact_photo_image);
+    this.herdIndicator     = (ImageView)       findViewById(R.id.herd_indicator);
     this.numberView        = (TextView)        findViewById(R.id.number);
     this.labelView         = (TextView)        findViewById(R.id.label);
     this.nameView          = (TextView)        findViewById(R.id.name);
@@ -50,6 +54,12 @@ public class ContactSelectionListItem extends LinearLayout implements Recipients
   public void set(long id, int type, String name, String number, String label, int color, boolean multiSelect) {
     this.id     = id;
     this.number = number;
+
+    FriendStore friendStore = FriendStore.getInstance(getContext());
+    if(friendStore.hasFriend(this.number)) {
+      this.herdIndicator.setVisibility(VISIBLE);
+    }
+
 
     if (type == ContactsDatabase.NEW_TYPE) {
       this.recipients = null;
