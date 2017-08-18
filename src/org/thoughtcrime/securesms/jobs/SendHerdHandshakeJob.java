@@ -33,8 +33,10 @@ import static org.thoughtcrime.securesms.dependencies.SignalCommunicationModule.
 
 public class SendHerdHandshakeJob extends PushSendJob implements InjectableType {
 
-  public static final Object HERD_LOCK = new Object();
-  public static long previousRun = 0;
+  public static final int TYPE_REQUEST  = 0;
+  public static final int TYPE_RESPONSE = 1;
+  public static final Object HERD_LOCK  = new Object();
+  public static long previousRun        = 0;
 
   private static final long serialVersionUID = 1L;
 
@@ -43,15 +45,19 @@ public class SendHerdHandshakeJob extends PushSendJob implements InjectableType 
   @Inject transient SignalMessageSenderFactory messageSenderFactory;
 
   private HerdProtos.HandshakeMessage herdHandshakeMessage;
+  private int                         messageType;
 
   private String destination = null;
 
-  public SendHerdHandshakeJob(Context context, String destination) {
+  public SendHerdHandshakeJob(Context context, String destination, int messageType) {
     super(context, constructParameters(context, destination));
+
     FriendStore friendStore = FriendStore.getInstance(context);
-    this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
-            .setPublicDevieID(friendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT)).build();
     this.destination = destination;
+    this.messageType = messageType;
+    this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
+            .setPublicDevieID(friendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT))
+            .setMessageType(this.messageType).build();
     // Improves log readability
     TAG += ": " + this.destination;
   }
@@ -132,7 +138,7 @@ public class SendHerdHandshakeJob extends PushSendJob implements InjectableType 
       // We're gonna add another job to the queue and let it come around, instead of looping on deliver()
       ApplicationContext.getInstance(context)
               .getJobManager()
-              .add(new SendHerdHandshakeJob(context, this.destination));
+              .add(new SendHerdHandshakeJob(context, this.destination, this.messageType));
       return;
     } catch (RateLimitException e) {
       Log.w(TAG, e);
@@ -141,7 +147,7 @@ public class SendHerdHandshakeJob extends PushSendJob implements InjectableType 
       // We're gonna add another job to the queue and let it come around, instead of looping on deliver()
       ApplicationContext.getInstance(context)
               .getJobManager()
-              .add(new SendHerdHandshakeJob(context, this.destination));
+              .add(new SendHerdHandshakeJob(context, this.destination, this.messageType));
       return;
     }
     catch (InvalidNumberException | UnregisteredUserException e) {

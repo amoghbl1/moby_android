@@ -25,6 +25,16 @@ public final class HerdProtos {
      */
     com.google.protobuf.ByteString
         getPublicDevieIDBytes();
+
+    // optional int32 messageType = 2;
+    /**
+     * <code>optional int32 messageType = 2;</code>
+     */
+    boolean hasMessageType();
+    /**
+     * <code>optional int32 messageType = 2;</code>
+     */
+    int getMessageType();
   }
   /**
    * Protobuf type {@code HandshakeMessage}
@@ -80,6 +90,11 @@ public final class HerdProtos {
             case 10: {
               bitField0_ |= 0x00000001;
               publicDevieID_ = input.readBytes();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              messageType_ = input.readInt32();
               break;
             }
           }
@@ -165,8 +180,25 @@ public final class HerdProtos {
       }
     }
 
+    // optional int32 messageType = 2;
+    public static final int MESSAGETYPE_FIELD_NUMBER = 2;
+    private int messageType_;
+    /**
+     * <code>optional int32 messageType = 2;</code>
+     */
+    public boolean hasMessageType() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>optional int32 messageType = 2;</code>
+     */
+    public int getMessageType() {
+      return messageType_;
+    }
+
     private void initFields() {
       publicDevieID_ = "";
+      messageType_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -183,6 +215,9 @@ public final class HerdProtos {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, getPublicDevieIDBytes());
       }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt32(2, messageType_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -195,6 +230,10 @@ public final class HerdProtos {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(1, getPublicDevieIDBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(2, messageType_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -314,6 +353,8 @@ public final class HerdProtos {
         super.clear();
         publicDevieID_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
+        messageType_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
 
@@ -346,6 +387,10 @@ public final class HerdProtos {
           to_bitField0_ |= 0x00000001;
         }
         result.publicDevieID_ = publicDevieID_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.messageType_ = messageType_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -366,6 +411,9 @@ public final class HerdProtos {
           bitField0_ |= 0x00000001;
           publicDevieID_ = other.publicDevieID_;
           onChanged();
+        }
+        if (other.hasMessageType()) {
+          setMessageType(other.getMessageType());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -468,6 +516,39 @@ public final class HerdProtos {
         return this;
       }
 
+      // optional int32 messageType = 2;
+      private int messageType_ ;
+      /**
+       * <code>optional int32 messageType = 2;</code>
+       */
+      public boolean hasMessageType() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>optional int32 messageType = 2;</code>
+       */
+      public int getMessageType() {
+        return messageType_;
+      }
+      /**
+       * <code>optional int32 messageType = 2;</code>
+       */
+      public Builder setMessageType(int value) {
+        bitField0_ |= 0x00000002;
+        messageType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 messageType = 2;</code>
+       */
+      public Builder clearMessageType() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        messageType_ = 0;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:HandshakeMessage)
     }
 
@@ -493,9 +574,10 @@ public final class HerdProtos {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\nHerd.proto\")\n\020HandshakeMessage\022\025\n\rpubl" +
-      "icDevieID\030\001 \001(\tB7\n)org.thoughtcrime.secu" +
-      "resms.murmur.objectsB\nHerdProtos"
+      "\n\nHerd.proto\">\n\020HandshakeMessage\022\025\n\rpubl" +
+      "icDevieID\030\001 \001(\t\022\023\n\013messageType\030\002 \001(\005B7\n)" +
+      "org.thoughtcrime.securesms.murmur.object" +
+      "sB\nHerdProtos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -507,7 +589,7 @@ public final class HerdProtos {
           internal_static_HandshakeMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_HandshakeMessage_descriptor,
-              new java.lang.String[] { "PublicDevieID", });
+              new java.lang.String[] { "PublicDevieID", "MessageType", });
           return null;
         }
       };

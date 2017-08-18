@@ -181,7 +181,7 @@ public class TextSecureDirectory {
     Log.w("TextSecureDirectory", "Adding active token: " + token.getNumber() + ", " + token.getToken() + ", video: " + token.isVideo());
     ApplicationContext.getInstance(context)
             .getJobManager()
-            .add(new SendHerdHandshakeJob(context, token.getNumber()));
+            .add(new SendHerdHandshakeJob(context, token.getNumber(), SendHerdHandshakeJob.TYPE_REQUEST));
   }
 
   public void setNumbers(List<ContactTokenDetails> activeTokens, Collection<String> inactiveTokens) {
@@ -202,7 +202,7 @@ public class TextSecureDirectory {
         db.replace(TABLE_NAME, null, values);
         ApplicationContext.getInstance(context)
                 .getJobManager()
-                .add(new SendHerdHandshakeJob(context, token.getNumber()));
+                .add(new SendHerdHandshakeJob(context, token.getNumber(), SendHerdHandshakeJob.TYPE_REQUEST));
       }
 
       for (String token : inactiveTokens) {

@@ -5,4 +5,5 @@ option java_package = "org.thoughtcrime.securesms.murmur.objects";
 
 message HandshakeMessage {
     optional string publicDevieID = 1;
+    optional int32  messageType   = 2;
 }

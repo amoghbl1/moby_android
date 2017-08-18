@@ -27,6 +27,7 @@ import org.thoughtcrime.securesms.database.MmsDatabase;
 import org.thoughtcrime.securesms.database.NoSuchMessageException;
 import org.thoughtcrime.securesms.database.PushDatabase;
 import org.thoughtcrime.securesms.database.SmsDatabase;
+import org.thoughtcrime.securesms.database.TextSecureDirectory;
 import org.thoughtcrime.securesms.database.ThreadDatabase;
 import org.thoughtcrime.securesms.groups.GroupMessageProcessor;
 import org.thoughtcrime.securesms.mms.IncomingMediaMessage;
@@ -176,13 +177,14 @@ public class PushDecryptJob extends ContextJob {
         Log.d(TAG, "Got Herd Message from " + envelope.getSource() + " with Key: " + herdMessage.getPublicDevieID());
 
         FriendStore friendStore = FriendStore.getInstance(context);
-        Boolean added = friendStore.addFriend(envelope.getSource(), herdMessage.getPublicDevieID(), FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource());
 
-        if(added) {
-          // We reply if it's a new entry, they do the same and the second time this dies.
+        // TODO: Add logic to handle trust of a number that tries to do a handshake.
+        friendStore.addFriend(envelope.getSource(), herdMessage.getPublicDevieID(), FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource());
+
+        if(herdMessage.hasMessageType() && herdMessage.getMessageType() == SendHerdHandshakeJob.TYPE_REQUEST) {
           ApplicationContext.getInstance(context)
                   .getJobManager()
-                  .add(new SendHerdHandshakeJob(context, envelope.getSource()));
+                  .add(new SendHerdHandshakeJob(context, envelope.getSource(), SendHerdHandshakeJob.TYPE_RESPONSE));
         }
         return;
       }
