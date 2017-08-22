@@ -33,8 +33,10 @@ import static org.thoughtcrime.securesms.dependencies.SignalCommunicationModule.
 
 public class SendHerdHandshakeJob extends PushSendJob implements InjectableType {
 
-  public static final int TYPE_REQUEST  = 0;
-  public static final int TYPE_RESPONSE = 1;
+  public static final int TYPE_HANDSHAKE_REQUEST  = 0;
+  public static final int TYPE_HANDSHAKE_RESPONSE = 1;
+  public static final int TYPE_MESSAGE            = 2;
+  
   public static final Object HERD_LOCK  = new Object();
   public static long previousRun        = 0;
 
