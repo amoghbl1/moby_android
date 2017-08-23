@@ -25,7 +25,6 @@ import info.guardianproject.nearby.bluetooth.roles.ClientThread;
 import info.guardianproject.nearby.bluetooth.roles.Constants;
 import info.guardianproject.nearby.bluetooth.roles.ProgressData;
 import info.guardianproject.nearby.bluetooth.roles.mananger.BluetoothManager;
-import io.scal.secureshare.libnearbynsd.R;
 
 /**
  * Created by n8fr8 on 9/2/16.

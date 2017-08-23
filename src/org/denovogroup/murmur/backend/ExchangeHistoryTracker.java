@@ -33,8 +33,7 @@ package org.denovogroup.murmur.backend;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import org.apache.log4j.Logger;
-import org.denovogroup.murmur.ui.MurmurApplication;
+import org.whispersystems.libsignal.logging.Log;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,26 +48,27 @@ import java.util.List;
 public class ExchangeHistoryTracker {
 
     private static final String TAG = "ExchangeHistoryTracker";
-
-    private static final Logger log = Logger.getLogger(TAG);
-
+    
     private static ExchangeHistoryTracker instance;
 
     private List<ExchangeHistoryItem> history = new ArrayList<>();
 
     private int exchangeCount = 0;
 
+    private Context mContext;
+
     /** Get an instance of the tracker, create one if necessary */
-    public static ExchangeHistoryTracker getInstance() {
+    public static ExchangeHistoryTracker getInstance(Context context) {
         if (instance == null){
-            instance = new ExchangeHistoryTracker();
+            instance = new ExchangeHistoryTracker(context);
         }
         return instance;
     }
 
-    private ExchangeHistoryTracker() {
+    private ExchangeHistoryTracker(Context context) {
+        this.mContext = context;
         //an empty private constructor to enforce singleton pattern.
-        exchangeCount = MurmurApplication.getContext().getSharedPreferences("count",Context.MODE_PRIVATE).getInt("count",0);
+        exchangeCount = mContext.getSharedPreferences("count",Context.MODE_PRIVATE).getInt("count",0);
 
     }
 
@@ -77,7 +77,7 @@ public class ExchangeHistoryTracker {
      * @param availablePeers peers to keep in history. discard the rest
      */
     public void cleanHistory(Collection<Peer> availablePeers) {
-        log.debug( "cleaning history");
+        Log.d(TAG,  "cleaning history");
         //get a list of peer addresses to cross reference with available history
         List<String> newPeerAddresses = new ArrayList<>();
         if (availablePeers != null){
@@ -104,7 +104,7 @@ public class ExchangeHistoryTracker {
       * @param address WifiP2p device address with which interacted
      */
     public void updateHistory(Context context ,String address){
-        log.debug( "history updated for:"+address);
+        Log.d(TAG,  "history updated for:"+address);
         for(ExchangeHistoryItem item : history){
             if(item.address.equals(address)){
                 item.attempts = 0;
@@ -152,13 +152,13 @@ public class ExchangeHistoryTracker {
 
     public void incrementExchangeCount(){
         exchangeCount++;
-        SharedPreferences preferences = MurmurApplication.getContext().getSharedPreferences("count",Context.MODE_PRIVATE);
+        SharedPreferences preferences = this.mContext.getSharedPreferences("count",Context.MODE_PRIVATE);
         preferences.edit().putInt("count",exchangeCount).commit();
     }
 
     public void resetExchangeCount(){
         exchangeCount = 0;
-        SharedPreferences preferences = MurmurApplication.getContext().getSharedPreferences("count",Context.MODE_PRIVATE);
+        SharedPreferences preferences = this.mContext.getSharedPreferences("count",Context.MODE_PRIVATE);
         preferences.edit().putInt("count",exchangeCount).commit();
     }
 

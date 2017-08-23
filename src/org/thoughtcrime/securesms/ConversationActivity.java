@@ -125,7 +125,7 @@ import org.thoughtcrime.securesms.mms.OutgoingMediaMessage;
 import org.thoughtcrime.securesms.mms.OutgoingSecureMediaMessage;
 import org.thoughtcrime.securesms.mms.Slide;
 import org.thoughtcrime.securesms.mms.SlideDeck;
-import org.thoughtcrime.securesms.murmur.backend.FriendStore;
+import org.denovogroup.murmur.backend.FriendStore;
 import org.thoughtcrime.securesms.notifications.MarkReadReceiver;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.providers.PersistentBlobProvider;
@@ -140,6 +140,7 @@ import org.thoughtcrime.securesms.service.WebRtcCallService;
 import org.thoughtcrime.securesms.sms.MessageSender;
 import org.thoughtcrime.securesms.sms.OutgoingEncryptedMessage;
 import org.thoughtcrime.securesms.sms.OutgoingEndSessionMessage;
+import org.thoughtcrime.securesms.sms.OutgoingHerdMessage;
 import org.thoughtcrime.securesms.sms.OutgoingTextMessage;
 import org.thoughtcrime.securesms.util.CharacterCalculator.CharacterState;
 import org.thoughtcrime.securesms.util.Dialogs;
@@ -1617,11 +1618,15 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
       boolean    forceSms       = sendButton.isManualSelection() && sendButton.getSelectedTransport().isSms();
       int        subscriptionId = sendButton.getSelectedTransport().getSimSubscriptionId().or(-1);
       long       expiresIn      = recipients.getExpireMessages() * 1000;
+      boolean    herdMessage    = sendButton.getSelectedTransport().isType(Type.HERD);
 
       Log.w(TAG, "isManual Selection: " + sendButton.isManualSelection());
       Log.w(TAG, "forceSms: " + forceSms);
+      Log.w(TAG, "herdMessage: " + herdMessage);
 
-      if ((!recipients.isSingleRecipient() || recipients.isEmailRecipient()) && !isMmsEnabled) {
+      if(herdMessage) {
+        sendHerdMessage();
+      } else if ((!recipients.isSingleRecipient() || recipients.isEmailRecipient()) && !isMmsEnabled) {
         handleManualMmsRequired();
       } else if (!forceSms && identityRecords.isUnverified()) {
         handleUnverifiedRecipients();
@@ -1723,6 +1728,36 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
         sendComplete(result);
       }
     }.execute(message);
+  }
+
+  private void sendHerdMessage() throws InvalidMessageException{
+    final Context context = getApplicationContext();
+    OutgoingTextMessage message;
+
+    message = new OutgoingHerdMessage(recipients, getMessage());
+
+
+    this.composeText.setText("");
+    final long id = fragment.stageOutgoingMessage(message);
+
+    new AsyncTask<OutgoingTextMessage, Void, Long>() {
+      @Override
+      protected Long doInBackground(OutgoingTextMessage... messages) {
+        return MessageSender.send(context, masterSecret, messages[0], threadId, new SmsDatabase.InsertListener() {
+          @Override
+          public void onComplete() {
+            Log.w(TAG, "Done sending herd message!!");
+            fragment.releaseOutgoingMessage(id);
+          }
+        });
+      }
+
+      @Override
+      protected void onPostExecute(Long result) {
+        sendComplete(result);
+      }
+    }.execute(message);
+
   }
 
   private void updateToggleButtonState() {

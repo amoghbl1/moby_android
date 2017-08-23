@@ -34,7 +34,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.support.v4.content.LocalBroadcastManager;
 
-import org.apache.log4j.Logger;
+import org.whispersystems.libsignal.logging.Log;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
@@ -101,9 +101,6 @@ public class PeerManager {
   /** Displayed in Android Monitor logs. */
   private static String TAG = "MurmurPeerManager";
 
-    private static final Logger log = Logger.getLogger(TAG);
-
-
   /**
    * Private constructor. Use PeerManager.getInstance() to obtain the app's
    * instance of the class.
@@ -114,7 +111,7 @@ public class PeerManager {
     mCurrentPeers = new ArrayList<Peer>();
     mBroadcastManager = LocalBroadcastManager.getInstance(context); 
 
-    log.debug( "Finished PeerManager constructor.");
+    Log.d(TAG,  "Finished PeerManager constructor.");
   }
 
   /**
@@ -126,7 +123,7 @@ public class PeerManager {
   public static PeerManager getInstance(Context context) {
     if (sPeerManager == null) {
       sPeerManager = new PeerManager(context);
-      log.debug( "Created instance of PeerManager");
+      Log.d(TAG,  "Created instance of PeerManager");
     }
     return sPeerManager;
   }
@@ -227,7 +224,7 @@ public class PeerManager {
    * peers.
    */
   private synchronized void garbageCollectPeer(Peer peer) {
-    log.debug( "Garbage collected peer " + peer);
+    Log.d(TAG,  "Garbage collected peer " + peer);
     mCurrentPeers.remove(peer);
   }
 
@@ -307,7 +304,7 @@ public class PeerManager {
   private void recordExchangeTime(Peer peer, Date exchangeTime) {
     BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
     if (device == null) {
-      log.error( "Recording exchange time of non-bluetooth peer! Can't do it.");
+      Log.e(TAG,  "Recording exchange time of non-bluetooth peer! Can't do it.");
       return;
     } else {
       exchangeTimes.put(device.getAddress(), exchangeTime);
@@ -323,13 +320,13 @@ public class PeerManager {
   private void recordExchangeAttemptTime(Peer peer, Date exchangeTime) {
     BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
     if (device == null) {
-      log.error( "Recording exchange attempt time of non-bluetooth peer! Can't do it.");
+      Log.e(TAG,  "Recording exchange attempt time of non-bluetooth peer! Can't do it.");
       return;
     } else {
       Date nextAttempt = new Date(exchangeTime.getDate() +
                                   (random.nextInt() % MS_BETWEEN_EXCHANGE_ATTEMPTS));
       exchangeAttemptTimes.put(device.getAddress(), nextAttempt);
-      log.warn( "Will attempt another exchange with peer " + peer + " no sooner than " + nextAttempt);
+      Log.w(TAG,  "Will attempt another exchange with peer " + peer + " no sooner than " + nextAttempt);
     }
   }
 
@@ -348,7 +345,7 @@ public class PeerManager {
   private Date getLastExchangeTime(Peer peer) {
     BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
     if (device == null) {
-      log.error( "Getting last exchange time of non-bluetooth peer! Can't do it!");
+      Log.e(TAG,  "Getting last exchange time of non-bluetooth peer! Can't do it!");
       return null;
     } else {
       Date when = exchangeTimes.get(device.getAddress());
@@ -374,7 +371,7 @@ public class PeerManager {
   private Date getNextExchangeAttemptTime(Peer peer) {
     BluetoothDevice device = peer.getNetwork().getBluetoothDevice();
     if (device == null) {
-      log.error( "Getting last exchange time of non-bluetooth peer! Can't do it!");
+      Log.e(TAG,  "Getting last exchange time of non-bluetooth peer! Can't do it!");
       return null;
     } else {
       Date when = exchangeAttemptTimes.get(device.getAddress());
@@ -418,11 +415,11 @@ public class PeerManager {
    * Run tasks, e.g. garbage collection of peers, speaker tasks, etc.
    */
   public void tasks() {
-    log.info("Started PeerManager tasks.");
+    Log.i(TAG, "Started PeerManager tasks.");
 
     garbageCollectPeers();
     
-    log.info("Finished with PeerManager tasks.");
+    Log.i(TAG, "Finished with PeerManager tasks.");
   }
 
   /**
@@ -438,7 +435,7 @@ public class PeerManager {
                                                        UnsupportedEncodingException {
     if (other == null || other.getNetwork() == null ||
         other.getNetwork().getBluetoothDevice() == null ) {
-        log.info( "this device not speaking to peer: "+other+" either peer or peer network is null");
+        Log.i(TAG,  "this device not speaking to peer: "+other+" either peer or peer network is null");
       return false;
     } 
     return thisDeviceSpeaksTo(other.getNetwork().getBluetoothDevice());
@@ -463,12 +460,12 @@ public class PeerManager {
       if(MurmurService.USE_BACKOFF) return true;
 
       if (other == null) {
-        log.info( "This device not speaking to peer, peer is null");
+        Log.i(TAG,  "This device not speaking to peer, peer is null");
       return false;
     } 
     String otherAddr = other.getAddress();
     if (otherAddr == null) {
-        log.info( "This device not speaking to peer :"+other+", peer address is null");
+        Log.i(TAG,  "This device not speaking to peer :"+other+", peer address is null");
       return false;
     }
     String myAddr = mBluetoothSpeaker.getAddress(); 

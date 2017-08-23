@@ -28,24 +28,18 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 */
-package org.thoughtcrime.securesms.murmur.ui;
+package org.denovogroup.murmur.ui;
 
-import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 
@@ -54,10 +48,10 @@ import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 
-import org.thoughtcrime.securesms.murmur.backend.FriendStore;
-import org.thoughtcrime.securesms.murmur.backend.SecurityManager;
-import org.thoughtcrime.securesms.murmur.backend.StorageBase;
-import org.thoughtcrime.securesms.murmur.backend.Utils;
+import org.denovogroup.murmur.backend.FriendStore;
+import org.denovogroup.murmur.backend.SecurityManager;
+import org.denovogroup.murmur.backend.StorageBase;
+import org.denovogroup.murmur.backend.Utils;
 import org.thoughtcrime.securesms.R;
 
 /**

@@ -28,7 +28,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 */
-package org.thoughtcrime.securesms.murmur.objects;
+package org.denovogroup.murmur.objects;
 
 import org.json.JSONArray;
 import org.json.JSONException;

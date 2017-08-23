@@ -30,7 +30,6 @@
 */
 package org.denovogroup.murmur.backend;
 
-import org.apache.log4j.Logger;
 import org.denovogroup.murmur.backend.Crypto.PrivateSetIntersection;
 import org.denovogroup.murmur.backend.Crypto.PrivateSetIntersection.ServerReplyTuple;
 import org.denovogroup.murmur.objects.ClientMessage;
@@ -38,6 +37,7 @@ import org.denovogroup.murmur.objects.MurmurMessage;
 import org.denovogroup.murmur.objects.ServerMessage;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.whispersystems.libsignal.logging.Log;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -69,8 +69,6 @@ import okio.ByteString;
  */
 public class CryptographicExchange extends Exchange {
 
-    private Context mContext;
-
     /** PSI computation for the half of the exchange where we're the "client". */
   private PrivateSetIntersection mClientPSI;
   
@@ -89,9 +87,7 @@ public class CryptographicExchange extends Exchange {
   /** Tag appears in Android log messages. */
   private static final String TAG = "CryptographicExchange";
 
-    private static final Logger log = Logger.getLogger(TAG);
-
-    private static final String MESSAGE_COUNT_KEY = "count";
+  private static final String MESSAGE_COUNT_KEY = "count";
 
   
   /**
@@ -112,7 +108,7 @@ public class CryptographicExchange extends Exchange {
     // the error message and error state of the exchange to reasonable values
     // before throwing their exceptions.
     try {
-        log.debug("starting cryptographicExchange");
+        Log.d(TAG, "starting cryptographicExchange");
       // TODO(lerner): This (initializing PSIs) is costly, so we may want to
       // do this offline if it's making exchanges slow.
       initializePSIObjects();
@@ -139,7 +135,7 @@ public class CryptographicExchange extends Exchange {
 
       callback.success(this);
     } catch (Exception e) {  // Treat ALL exceptions as fatal.
-        log.error("Exception while run()ing CryptographicExchange: ", e);
+        Log.e(TAG, "Exception while run()ing CryptographicExchange: ", e);
         if(getExchangeStatus() == Status.ERROR_RECOVERABLE){
             callback.recover(this, getErrorMessage());
         } else {
@@ -158,7 +154,7 @@ public class CryptographicExchange extends Exchange {
    */
   private void initializePSIObjects() throws NoSuchAlgorithmException, 
                                              IllegalArgumentException {
-      log.debug("initializing PSIObject");
+      Log.d(TAG, "initializing PSIObject");
       ArrayList<byte[]> friends = friendStore.getAllFriendsBytes();
     try {
       // The clientPSI object manages the interaction in which we're the "client".
@@ -178,7 +174,7 @@ public class CryptographicExchange extends Exchange {
      * blinded friends from the friend store.
      */
     private void sendFriends() throws IOException{
-        log.debug("sending local contacts list");
+        Log.d(TAG, "sending local contacts list");
         ArrayList<ByteString> blindedFriends = SecurityManager.getCurrentProfile(mContext).isUseTrust() ?
                 Crypto.byteArraysToStrings(mClientPSI.encodeBlindedItems()) : new ArrayList<ByteString>();
         ClientMessage cm = new ClientMessage(null ,blindedFriends);
@@ -191,7 +187,7 @@ public class CryptographicExchange extends Exchange {
 
 
     private void receiveFriends() throws IOException{
-        log.debug("receiving remote contacts");
+        Log.d(TAG, "receiving remote contacts");
         mRemoteClientMessage = ClientMessage.fromJSON(lengthValueRead(in));
 
         if (mRemoteClientMessage == null) {
@@ -219,7 +215,7 @@ public class CryptographicExchange extends Exchange {
    * from the message store.
    */
   private void sendClientMessage() throws IOException, JSONException {
-      log.debug("sending messages");
+      Log.d(TAG, "sending messages");
       //create a message pool to be sent and send each message individually to allow partial data recovery in case of connection loss
       boolean success = true;
       List<MurmurMessage> messagesPool = getMessages(commonFriends);
@@ -231,7 +227,7 @@ public class CryptographicExchange extends Exchange {
           success = false;
       } else {
           for (MurmurMessage message : messagesPool) {
-              log.debug("sending a message");
+              Log.d(TAG, "sending a message");
               List<JSONObject> messageWrapper = new ArrayList<>();
               messageWrapper.add(message.toJSON(mContext));
               ClientMessage cm = new ClientMessage((ArrayList<JSONObject>)messageWrapper, null);
@@ -253,7 +249,7 @@ public class CryptographicExchange extends Exchange {
    * @return A ClientMessage sent by the remote party, or null in the case of an error.
    */
   private void receiveClientMessage() throws IOException {
-      log.debug("receiving messages");
+      Log.d(TAG, "receiving messages");
       //the first message received is a hint, telling the us how many messages will be sent
       int messageCount = 0;
 
@@ -261,9 +257,9 @@ public class CryptographicExchange extends Exchange {
 
       if(exchangeInfo != null){
           try {
-              log.debug("peer wish to send us:"+exchangeInfo.getInt(MESSAGE_COUNT_KEY)+" messages");
+              Log.d(TAG, "peer wish to send us:"+exchangeInfo.getInt(MESSAGE_COUNT_KEY)+" messages");
               messageCount = Math.min(SecurityManager.getCurrentProfile(mContext).getMaxMessages(), exchangeInfo.getInt(MESSAGE_COUNT_KEY));
-              log.debug("we accept receiving only:"+messageCount+" message");
+              Log.d(TAG, "we accept receiving only:"+messageCount+" message");
           } catch (Exception e){}
       }
 
@@ -275,7 +271,7 @@ public class CryptographicExchange extends Exchange {
 
           @Override
           public ClientMessage call() throws Exception {
-              log.debug("receiving message");
+              Log.d(TAG, "receiving message");
               ClientMessage mCurrentReceived;
 
               mCurrentReceived = ClientMessage.fromJSON(lengthValueRead(in));
@@ -288,7 +284,7 @@ public class CryptographicExchange extends Exchange {
                   throw new Exception("Remote client messages field was null");
               }
 
-              log.debug("message received");
+              Log.d(TAG, "message received");
 
               return mCurrentReceived;
           }
@@ -297,17 +293,17 @@ public class CryptographicExchange extends Exchange {
       //read from the stream until either times out or get all the messages
       ExecutorService executor = Executors.newSingleThreadExecutor();
       while(mMessagesReceived.size() < messageCount) {
-          log.debug("received message list not yet full, attempting to get messages...");
+          Log.d(TAG, "received message list not yet full, attempting to get messages...");
           Future<ClientMessage> task = executor.submit(new ReceiveSingleMessage());
           try {
-              log.debug("requesting results from receive message task");
+              Log.d(TAG, "requesting results from receive message task");
               mRemoteClientMessage = task.get(EXCHANGE_TIMEOUT, TimeUnit.MILLISECONDS);
-              log.debug("got results from receive message task");
+              Log.d(TAG, "got results from receive message task");
               //Add everything passed in the wrapper to the pool
               for(JSONObject message : mRemoteClientMessage.messages) {
-                  log.debug("unwrapping message");
+                  Log.d(TAG, "unwrapping message");
                   mMessagesReceived.add(MurmurMessage.fromJSON(mContext, message));
-                  log.debug("message unwrapped");
+                  Log.d(TAG, "message unwrapped");
               }
           } catch (ExecutionException ex){
               ex.printStackTrace();
@@ -334,7 +330,7 @@ public class CryptographicExchange extends Exchange {
           }
       }
       executor.shutdown();
-      log.debug("done receiving messages");
+      Log.d(TAG, "done receiving messages");
       if (mRemoteClientMessage == null) {
           throw new IOException("Remote client message was null in sendServerMessage.");
       }
@@ -346,7 +342,7 @@ public class CryptographicExchange extends Exchange {
    */
   private void sendServerMessage() throws NoSuchAlgorithmException, 
                                           IOException {
-      log.debug("sending server message");
+      Log.d(TAG, "sending server message");
     if (remoteBlindedFriends == null) {
       throw new IOException("Remove client message blinded friends is null in sendServerMessage.");
     }
@@ -356,17 +352,17 @@ public class CryptographicExchange extends Exchange {
     try { 
       srt = mServerPSI.replyToBlindedItems(remoteBlindedFriends);
     } catch (NoSuchAlgorithmException e) {
-      log.info("No such algorithm in replyToBlindedItems: " + e);
+      Log.i(TAG, "No such algorithm in replyToBlindedItems: " + e);
       setExchangeStatus(Status.ERROR);
       setErrorMessage("PSI subsystem is broken, NoSuchAlgorithmException");
       throw e;
     } catch (IllegalArgumentException e) {
-      log.info("Null passed to replyToBlindedItems on serverPSI? " + e);
+      Log.i(TAG, "Null passed to replyToBlindedItems on serverPSI? " + e);
       setExchangeStatus(Status.ERROR);
       setErrorMessage("Bad argument to server PSI subsystem. (null remoteBlindedItems?)");
       throw e;
     }
-      log.debug("formatting server message");
+      Log.d(TAG, "formatting server message");
     // Format and create ServerMessage.
     ArrayList<ByteString> doubleBlindedStrings = Crypto.byteArraysToStrings(srt.doubleBlindedItems);
     ArrayList<ByteString> hashedBlindedStrings = Crypto.byteArraysToStrings(srt.hashedBlindedItems);
@@ -379,7 +375,7 @@ public class CryptographicExchange extends Exchange {
       setErrorMessage("Length/value write of server message failed.");
       throw new IOException("Length/value write of server message failed, but exception is hidden (see Exchange.java)");
     }
-      log.debug("server message was sent");
+      Log.d(TAG, "server message was sent");
   }
 
   /**
@@ -388,14 +384,14 @@ public class CryptographicExchange extends Exchange {
    * @return A ServerMessage representing the remote party's server message.
    */
   private void receiveServerMessage() throws IOException {
-      log.debug("receiving server message from peer");
+      Log.d(TAG, "receiving server message from peer");
     mRemoteServerMessage = ServerMessage.fromJSON(lengthValueRead(in));
     if (mRemoteServerMessage == null) {
       setExchangeStatus(Status.ERROR);
       setErrorMessage("Remote server message was not received.");
       throw new IOException("Remote server message was not received.");
     }
-      log.debug("server message received");
+      Log.d(TAG, "server message received");
   }
 
   /**
@@ -403,7 +399,7 @@ public class CryptographicExchange extends Exchange {
    * that number in an instance variable.
    */
   private void computeSharedFriends() throws NoSuchAlgorithmException, IOException {
-      log.debug("calculating shared contacts");
+      Log.d(TAG, "calculating shared contacts");
     commonFriends = mClientPSI.getCardinality(getSRTFromServerTuple());
 
       int requiredFriends = SecurityManager.getCurrentProfile(mContext).minSharedContacts;
@@ -436,9 +432,7 @@ public class CryptographicExchange extends Exchange {
   public CryptographicExchange(Context context, String peerAddress, InputStream in, OutputStream out, boolean asInitiator,
                                FriendStore friendStore, MessageStore messageStore, 
                                ExchangeCallback callback) throws IllegalArgumentException {
-    super(peerAddress, in, out, asInitiator, friendStore, messageStore, callback);
-
-      mContext = context;
+    super(peerAddress, in, out, asInitiator, friendStore, messageStore, callback, context);
   }
 
 

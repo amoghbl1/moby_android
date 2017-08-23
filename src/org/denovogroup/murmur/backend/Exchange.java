@@ -30,13 +30,14 @@
 */
 package org.denovogroup.murmur.backend;
 
-import org.apache.log4j.Logger;
+import android.content.Context;
+
 import org.denovogroup.murmur.objects.CleartextFriends;
 import org.denovogroup.murmur.objects.CleartextMessages;
 import org.denovogroup.murmur.objects.MurmurMessage;
-import org.denovogroup.murmur.ui.MurmurApplication;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.whispersystems.libsignal.logging.Log;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -117,8 +118,6 @@ public class Exchange implements Runnable {
   /** Included with Android log messages. */
   private static final String TAG = "Exchange";
 
-    private static final Logger log = Logger.getLogger(TAG);
-
   /** Number of bytes in a megabyte. */
   private static final int MEGABYTES = 1024 * 1024;
 
@@ -150,6 +149,8 @@ public class Exchange implements Runnable {
     this.mErrorMessage = errorMessage;
   }
 
+  public Context mContext;
+
   /**
    * Create a new exchange which will communicate over the given Input/Output
    * streams and use the given context to access storage for messages/friends.
@@ -162,7 +163,7 @@ public class Exchange implements Runnable {
    */
   public Exchange(String peerAddress, InputStream in, OutputStream out, boolean asInitiator,
                   FriendStore friendStore, MessageStore messageStore, 
-                  ExchangeCallback callback) throws IllegalArgumentException {
+                  ExchangeCallback callback, Context context) throws IllegalArgumentException {
       this.peerAddress = peerAddress;
     this.in = in;
     this.out = out;
@@ -170,6 +171,7 @@ public class Exchange implements Runnable {
     this.messageStore = messageStore;
     this.asInitiator = asInitiator;
     this.callback = callback;
+    this.mContext = context;
 
     // TODO(lerner): Probalby best to throw exceptions here, since these are fatal.
     // There's no point in trying to have an exchange without someone to talk to
@@ -187,12 +189,15 @@ public class Exchange implements Runnable {
     if (messageStore == null) {
       throw new IllegalArgumentException("Message store for exchange is null.");
     }
+    if (context == null) {
+      throw new IllegalArgumentException("Message store for exchange is null.");
+    }
     if (callback == null) {
       // I log this as a warning because not providing callbacks is a thing, it's
       // just an illogical thing here in all likelihood.
       // But I throw an exception because it simply isn't reasonable to pass null
       // unless we change the architecture of exchanges.
-      log.warn( "No callback provided for exchange - nothing would happen locally!");
+      Log.w(TAG,  "No callback provided for exchange - nothing would happen locally!");
       throw new IllegalArgumentException("No callback provided for exchange.");
     }
   }
@@ -218,7 +223,7 @@ public class Exchange implements Runnable {
    * @return The top NUM_MESSAGES_TO_EXCHANGE in the MessageStore.
    */
   /* package */ List<MurmurMessage> getMessages(int sharedContacts) {
-    return MessageStore.getInstance().getMessagesForExchange(sharedContacts);
+    return MessageStore.getInstance(mContext).getMessagesForExchange(sharedContacts);
   }
 
   /**
@@ -230,7 +235,7 @@ public class Exchange implements Runnable {
       List<MurmurMessage> messages = getMessages(0);
       //notify the recipient how many items we expect to send him.
       MurmurMessage exchangeInfoMessage = new MurmurMessage("ExchangeAgreement", Integer.toString(messages.size()),1d);
-      if(lengthValueWrite(out, exchangeInfoMessage.toJSON(MurmurApplication.getContext()))) {
+      if(lengthValueWrite(out, exchangeInfoMessage.toJSON(this.mContext))) {
           // Send messages
          for(MurmurMessage message : messages){
 
@@ -238,7 +243,7 @@ public class Exchange implements Runnable {
              packet.add(message);
 
               CleartextMessages messagesMessage = new CleartextMessages((ArrayList<MurmurMessage>) packet);
-              lengthValueWrite(out, messagesMessage.toJson(MurmurApplication.getContext()));
+              lengthValueWrite(out, messagesMessage.toJson(this.mContext));
           }
       }
   }
@@ -256,14 +261,14 @@ public class Exchange implements Runnable {
       Set<String> intersection = new HashSet(myFriends);
       intersection.retainAll(theirFriends);
       commonFriends = intersection.size();
-      log.info( "Received " + theirFriends.size() + " friends. Overlap with my " +
+      Log.i(TAG,  "Received " + theirFriends.size() + " friends. Overlap with my " +
               myFriends.size() + " friends is " + commonFriends);
     } else if (mFriendsReceived == null) {
-      log.info( "Friends received is null: " + mFriendsReceived);
+      Log.i(TAG,  "Friends received is null: " + mFriendsReceived);
       setExchangeStatus(Status.ERROR);
       setErrorMessage("Failed receiving friends.");
     } else {
-      log.error( "Friends received.friends is null");
+      Log.e(TAG,  "Friends received.friends is null");
       setExchangeStatus(Status.ERROR);
       setErrorMessage("Failed receiving friends.");
     }
@@ -275,7 +280,7 @@ public class Exchange implements Runnable {
   private void receiveMessages() {
       //the first message received is a hint, telling the us how many messages will be sent
       int messageCount = 0;
-      MurmurMessage exchangeInfo = MurmurMessage.fromJSON(MurmurApplication.getContext(), lengthValueRead(in));
+      MurmurMessage exchangeInfo = MurmurMessage.fromJSON(this.mContext, lengthValueRead(in));
       if(exchangeInfo != null){
           try {
               messageCount = Math.min(NUM_MESSAGES_TO_EXCHANGE, Integer.parseInt(exchangeInfo.text));
@@ -288,10 +293,15 @@ public class Exchange implements Runnable {
       //Define the get single message task
       class ReceiveSingleMessage implements Callable<List<MurmurMessage>> {
 
+        private Context context;
+
+        ReceiveSingleMessage(Context context){
+          this.context = context;
+        }
           @Override
           public List<MurmurMessage> call() throws Exception {
               CleartextMessages mCurrentReceived;
-              mCurrentReceived = CleartextMessages.fromJson(MurmurApplication.getContext(),lengthValueRead(in));
+              mCurrentReceived = CleartextMessages.fromJson(this.context, lengthValueRead(in));
               return mCurrentReceived.messages;
           }
       }
@@ -299,7 +309,7 @@ public class Exchange implements Runnable {
       //read from the stream until either times out or get all the messages
       ExecutorService executor = Executors.newSingleThreadExecutor();
       while(mMessagesReceived.size() < messageCount) {
-          Future<List<MurmurMessage>> task = executor.submit(new ReceiveSingleMessage());
+          Future<List<MurmurMessage>> task = executor.submit(new ReceiveSingleMessage(this.mContext));
           try {
               List<MurmurMessage> res = task.get(EXCHANGE_TIMEOUT, TimeUnit.MILLISECONDS);
               mMessagesReceived.addAll(res);
@@ -320,13 +330,13 @@ public class Exchange implements Runnable {
     // In this version of the exchange there's no crypto, so the messages don't
     // depend on each other at all.
     if (asInitiator) {
-      log.info( "About to send friends.");
+      Log.i(TAG,  "About to send friends.");
       sendFriends();
-      log.info( "Sent friends. About to send messages.");
+      Log.i(TAG,  "Sent friends. About to send messages.");
       sendMessages();
-      log.info( "Sent messages. About to receive friends.");
+      Log.i(TAG,  "Sent messages. About to receive friends.");
       receiveFriends();
-      log.info( "Received friends. About to receive messages.");
+      Log.i(TAG,  "Received friends. About to receive messages.");
       receiveMessages();
     } else {
       receiveFriends();
@@ -341,7 +351,7 @@ public class Exchange implements Runnable {
     // We're done with the mechanics of the exchange - if there's a callback
     // to report to, call its .success() or .failure() method as appropriate.
     if (callback == null) {
-      log.warn( "No callback provided to exchange.");
+      Log.w(TAG,  "No callback provided to exchange.");
       return;
     }
     if (getExchangeStatus() == Status.SUCCESS) {
@@ -459,7 +469,7 @@ public class Exchange implements Runnable {
         outputStream.flush();
       return true;
     } catch (IOException e) {
-      log.error( "Length/value write failed with exception: " , e);
+      Log.e(TAG,  "Length/value write failed with exception: " , e);
       return false;
     }
   }
@@ -476,7 +486,7 @@ public class Exchange implements Runnable {
     if (length < 0) {
       return null;
     } else if (length > MAX_MESSAGE_SIZE) {
-      log.error( "Remote party asked us to read " + length + " bytes in a length/value read");
+      Log.e(TAG,  "Remote party asked us to read " + length + " bytes in a length/value read");
       return null;
     }
     byte[] messageBytes = new byte[length];
@@ -490,10 +500,10 @@ public class Exchange implements Runnable {
       recoveredMessage = new JSONObject(new String(messageBytes));
 
     } catch (IOException e) {
-      log.error( "IOException parsing message bytes: " , e);
+      Log.e(TAG,  "IOException parsing message bytes: " , e);
         return null;
     } catch (JSONException e) {
-        log.error( "IOException parsing message bytes: ", e);
+        Log.e(TAG,  "IOException parsing message bytes: ", e);
         return null;
     }
       return recoveredMessage;
@@ -508,7 +518,7 @@ public class Exchange implements Runnable {
     try {
       stream.read(lengthBytes);
     } catch (IOException e) {
-      log.error( "IOException popping length from input stream: " , e);
+      Log.e(TAG,  "IOException popping length from input stream: " , e);
       return -1;
     }
     ByteBuffer buffer = ByteBuffer.wrap(lengthBytes);

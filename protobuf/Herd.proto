@@ -1,9 +1,14 @@
 syntax = "proto2";
 
 option java_outer_classname = "HerdProtos";
-option java_package = "org.thoughtcrime.securesms.murmur.objects";
+option java_package = "org.denovogroup.murmur.objects";
 
 message HandshakeMessage {
     optional string publicDevieID = 1;
     optional int32  messageType   = 2;
+}
+
+message HerdPacket {
+    optional string destination = 1;
+    optional string payload     = 2;
 }

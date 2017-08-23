@@ -37,7 +37,7 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.os.Build;
 
-import org.apache.log4j.Logger;
+import org.whispersystems.libsignal.logging.Log;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -94,9 +94,7 @@ public class BluetoothSpeaker {
 
   /** Receives Bluetooth related broadcasts. */
   private BluetoothBroadcastReceiver mBluetoothBroadcastReceiver;
-
-    private static final Logger log = Logger.getLogger(TAG);
-
+  
 
   /**
    * @param context A context, from which to access the Bluetooth subsystem.
@@ -104,7 +102,7 @@ public class BluetoothSpeaker {
    */
   public BluetoothSpeaker(MurmurService context, PeerManager peerManager) {
     super();
-      log.info( "Creating BluetoothSpeaker");
+      Log.i(TAG,  "Creating BluetoothSpeaker");
     mPayload = new byte[EXCHANGE_SIZE];
     for (int i=0; i < EXCHANGE_SIZE; i++) {
       mPayload[i] = (byte) i;
@@ -118,10 +116,10 @@ public class BluetoothSpeaker {
       // TODO (lerner): Tell the server that this device doesn't do Bluetooth.
       // TODO (lerner): Opt this device out of data collection?
         mBluetoothBroadcastReceiver.showNoBluetoothNotification(context);
-      log.error( "Device doesn't support Bluetooth.");
+      Log.e(TAG,  "Device doesn't support Bluetooth.");
       return;
     } else if (!mBluetoothAdapter.isEnabled()) {
-      log.error("Got a non-null Bluetooth Adapter but it's not enabled.");
+      Log.e(TAG, "Got a non-null Bluetooth Adapter but it's not enabled.");
        // TODO(lerner): This is contrary to Android user experience, which
        // states that apps should never turn on Bluetooth without explicit
        // user interaction. We should instead prompt the user with the
@@ -134,22 +132,22 @@ public class BluetoothSpeaker {
     }
 
       this.mThisDeviceUUID = getUUIDFromMACAddress(getAddress());
-      log.info( "This device's UUID is " + mThisDeviceUUID.toString());
+      Log.i(TAG,  "This device's UUID is " + mThisDeviceUUID.toString());
 
     if (mBluetoothAdapter.isEnabled()) {
       try { 
         createListeningSocket();
         spawnConnectionAcceptingThread();
       } catch (IOException e) {
-        log.error("Failed to create listening BT server socket. ", e);
+        Log.e(TAG, "Failed to create listening BT server socket. ", e);
           e.printStackTrace();
-        log.error("Can't receive incoming connections.");
+        Log.e(TAG, "Can't receive incoming connections.");
           ServiceWatchDog.getInstance().notifyError(e);
       }
     } else {
         mBluetoothBroadcastReceiver.showNoBluetoothNotification(context);
     }
-    log.debug( "Finished creating BluetoothSpeaker.");
+    Log.d(TAG,  "Finished creating BluetoothSpeaker.");
   }
 
   /**
@@ -162,7 +160,7 @@ public class BluetoothSpeaker {
       try { 
         return mBluetoothAdapter.getRemoteDevice(address);
       } catch (IllegalArgumentException e) {
-        log.error( "Passed illegal address to get remote bluetooth device: '" + address+"'");
+        Log.e(TAG,  "Passed illegal address to get remote bluetooth device: '" + address+"'");
         return null;
       }
     } else {
@@ -258,13 +256,13 @@ public class BluetoothSpeaker {
             try {
               Thread.sleep(10 * 1000);
             } catch (InterruptedException e) {
-              log.error( "Connection accepting thread was interrupted during sleep: ",e);
+              Log.e(TAG,  "Connection accepting thread was interrupted during sleep: ",e);
             }
             acceptConnection();
           } catch (IOException e) {
-            log.error("IOException while accepting/responding to a connection",e);
+            Log.e(TAG, "IOException while accepting/responding to a connection",e);
             if (!mBluetoothAdapter.isEnabled()) {
-              log.error("Bluetooth adapter is disabled; not accepting connections.");
+              Log.e(TAG, "Bluetooth adapter is disabled; not accepting connections.");
               mServerSocket = null;
               return;
             }
@@ -280,7 +278,7 @@ public class BluetoothSpeaker {
    */
   private void createListeningSocket() throws IOException {
       mServerSocket = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(SDP_NAME, mThisDeviceUUID);
-      log.info(String.format("Listening socket created: Listening (insecure RFCOMM) - name <%s>, UUID <%s>.",
+      Log.i(TAG, String.format("Listening socket created: Listening (insecure RFCOMM) - name <%s>, UUID <%s>.",
               SDP_NAME, mThisDeviceUUID));
   }
 
@@ -294,10 +292,10 @@ public class BluetoothSpeaker {
     } else if (!mBluetoothAdapter.isEnabled()) {
       throw new IOException("Bluetooth adapter is disabled, not trying to accept().");
     }
-    log.info( "Calling mServerSocket.accept()");
+    Log.i(TAG,  "Calling mServerSocket.accept()");
     mSocket = mServerSocket.accept();
-    log.info("Accepted socket from " + mSocket.getRemoteDevice());
-    log.info( "Accepted socket connected? " + mSocket.isConnected());
+    Log.i(TAG, "Accepted socket from " + mSocket.getRemoteDevice());
+    Log.i(TAG,  "Accepted socket connected? " + mSocket.isConnected());
       MurmurService.direction = -1;
       MurmurService.remoteAddress = mSocket.getRemoteDevice().getAddress();
     mExchange = new CryptographicExchange(
@@ -321,29 +319,29 @@ public class BluetoothSpeaker {
    * if state allow for proper bluetooth handling or false if process should be terminated
    */
   public boolean tasks() {
-    log.info("Starting BluetoothSpeaker tasks.");
-      log.info("mServerSocket:"+(mServerSocket == null)
+    Log.i(TAG, "Starting BluetoothSpeaker tasks.");
+      Log.i(TAG, "mServerSocket:"+(mServerSocket == null)
               +" mBluetoothAdapter:"+(mBluetoothAdapter != null)
               +" mConnectionAcceptingThread:"+(mBluetoothAdapter != null));
     if (mServerSocket == null         && mBluetoothAdapter != null &&
         mBluetoothAdapter.isEnabled() && (mConnectionAcceptingThread == null || !mConnectionAcceptingThread.isAlive())) {
       try { 
-        log.info("No ServerSocket, creating a new one.");
+        Log.i(TAG, "No ServerSocket, creating a new one.");
         createListeningSocket();
         spawnConnectionAcceptingThread();
       } catch (IOException e) {
-        log.error("Tasks: failed to create listening BT server socket. ",e);
-        log.error("Can't receive incoming connections.");
+        Log.e(TAG, "Tasks: failed to create listening BT server socket. ",e);
+        Log.e(TAG, "Can't receive incoming connections.");
         return false;
       }
     }
 
       if(mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()){
-          log.info("bluetooth tasks failed, bluetooth disabled");
+          Log.i(TAG, "bluetooth tasks failed, bluetooth disabled");
           return false;
       }
 
-      log.info("finished BluetoothSpeaker tasks.");
+      Log.i(TAG, "finished BluetoothSpeaker tasks.");
       return true;
   }
 
@@ -407,7 +405,7 @@ public class BluetoothSpeaker {
      * Connect to the peer and report success or failure.
      */
     public void run() {
-        log.info( "Running connectionRunnable for :"+mPeer);
+        Log.i(TAG,  "Running connectionRunnable for :"+mPeer);
       BluetoothDevice device = mPeer.getNetwork().getBluetoothDevice();
       if (device == null) {
         mCallback.failure("No bluetooth device for peer " + mPeer.toString());
@@ -444,7 +442,7 @@ public class BluetoothSpeaker {
         Future<Boolean> task = executor.submit(new ConnectBluetoothSocket());
         try {
             Boolean connectSuccessful = task.get(SOCKET_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
-            log.debug("got socket connection result");
+            Log.d(TAG, "got socket connection result");
         } catch (ExecutionException e) {
             mCallback.failure(
                     String.format("Exception connecting to %s on peer %s. IOException: %s",
@@ -452,7 +450,7 @@ public class BluetoothSpeaker {
             );
             return;
         } catch (InterruptedException|TimeoutException e) {
-            log.error("socket connection timed out for: " + mPeer, e);
+            Log.e(TAG, "socket connection timed out for: " + mPeer, e);
             mCallback.failure(
                     String.format("Exception connecting to %s on peer %s. IOException: %s",
                             remoteUUID, mPeer, e)
@@ -474,7 +472,7 @@ public class BluetoothSpeaker {
     }
 
     public void unregisterReceiver(Context context){
-        log.info( "Unregistering Bluetooth receiver");
+        Log.i(TAG,  "Unregistering Bluetooth receiver");
         context.unregisterReceiver(mBluetoothBroadcastReceiver);
     }
 }

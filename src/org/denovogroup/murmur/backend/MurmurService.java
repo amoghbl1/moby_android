@@ -31,46 +31,36 @@
 package org.denovogroup.murmur.backend;
 
 import android.app.ActivityManager;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
+import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.net.wifi.WifiManager;
-import android.os.Build;
-import android.os.Handler;
-import android.support.v4.content.LocalBroadcastManager;
 import android.content.Context;
 import android.content.Intent;
-import android.app.Service;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.wifi.WifiManager;
+import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 
-import org.thoughtcrime.securesms.R;
-import org.thoughtcrime.securesms.murmur.backend.FriendStore;
-import org.thoughtcrime.securesms.murmur.backend.StorageBase;
+import org.denovogroup.murmur.objects.MurmurMessage;
 import org.whispersystems.libsignal.logging.Log;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.lang.System;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -136,11 +126,11 @@ public class MurmurService extends Service {
                 BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
                 if (mBluetoothAdapter != null) mBluetoothAdapter.enable();
             } else if(ACTION_ONWIFI.equals(action)){
-                WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+                WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 if(wifiManager != null) wifiManager.setWifiEnabled(true);
             } else{
-                SharedPreferences pref = getSharedPreferences(MainActivity.PREF_FILE, MODE_PRIVATE);
-                pref.edit().putBoolean(MainActivity.IS_APP_ENABLED, false).commit();
+                SharedPreferences pref = getSharedPreferences(AppConstants.PREF_FILE, MODE_PRIVATE);
+                pref.edit().putBoolean(AppConstants.IS_APP_ENABLED, false).commit();
                 MurmurService.this.stopSelf();
             }
         }
@@ -163,7 +153,6 @@ public class MurmurService extends Service {
     /** Android Log Tag. */
     private final static String TAG = "MurmurService";
 
-    private static final int NOTIFICATION_ID = R.string.unread_notification_title;
     private static final int RENAME_DELAY = 1000;
     private static final String DUMMY_MAC_ADDRESS = "02:00:00:00:00:00";
     public static final int BACKOFF_FOR_ATTEMPT_MILLIS = 10 * 1000;
@@ -303,19 +292,19 @@ public class MurmurService extends Service {
                 unregisterReceiver(errorHandler);
             } catch (Exception e){}
         }
-        log.debug("MurmurService onDestroy");
+        Log.d(TAG, "MurmurService onDestroy");
       mBackgroundExecution.cancel(true);
-        SharedPreferences pref = getSharedPreferences(MainActivity.PREF_FILE, Context.MODE_PRIVATE);
-        if(pref.contains(MainActivity.WIFI_NAME) && mWifiDirectSpeaker != null){
-            log.debug( "Restoring wifi name");
-            mWifiDirectSpeaker.setWifiDirectUserFriendlyName(pref.getString(MainActivity.WIFI_NAME, ""));
+        SharedPreferences pref = getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
+        if(pref.contains(AppConstants.WIFI_NAME) && mWifiDirectSpeaker != null){
+            Log.d(TAG, "Restoring wifi name");
+            mWifiDirectSpeaker.setWifiDirectUserFriendlyName(pref.getString(AppConstants.WIFI_NAME, ""));
         }
 
         mPeerManager.forgetAllPeers();
         mWifiDirectSpeaker.dismissNoWifiNotification();
         mBluetoothSpeaker.unregisterReceiver(this);
         mBluetoothSpeaker.dismissNoBluetoothNotification();
-        log.debug("MurmurService destroyed");
+        Log.d(TAG, "MurmurService destroyed");
     }
 
 
@@ -339,9 +328,9 @@ public class MurmurService extends Service {
         timeSinceLastOK = true;
       }
         if(!USE_MINIMAL_LOGGING) {
-            log.info( "Ready to connect? " + (timeSinceLastOK && (getConnecting() == null)));
-            log.info( "Connecting: " + getConnecting());
-            log.info( "timeSinceLastOK: " + timeSinceLastOK);
+            Log.i(TAG, "Ready to connect? " + (timeSinceLastOK && (getConnecting() == null)));
+            Log.i(TAG, "Connecting: " + getConnecting());
+            Log.i(TAG, "timeSinceLastOK: " + timeSinceLastOK);
         }
       return timeSinceLastOK && (getConnecting() == null);
     }
@@ -350,7 +339,7 @@ public class MurmurService extends Service {
      * Set the time of the last exchange, kept in storage, to the current time.
      */
     private void setLastExchangeTime() {
-        if(!USE_MINIMAL_LOGGING) log.info( "Setting last exchange time");
+        if(!USE_MINIMAL_LOGGING) Log.i(TAG, "Setting last exchange time");
       long now = System.currentTimeMillis();
       mStore.putLong(LAST_EXCHANGE_TIME_KEY, now);
     }
@@ -360,11 +349,14 @@ public class MurmurService extends Service {
      * background tasks.
      */
     public void backgroundTasks() {
-        if(!USE_MINIMAL_LOGGING) log.info( "Background Tasks Started");
+        if(!USE_MINIMAL_LOGGING) Log.i(TAG, "Background Tasks Started");
 
+        /*
         if(isAppInForeground()){
             cancelUnreadMessagesNotification();
         }
+        */
+
         // TODO(lerner): Why not just use mPeerManager?
         PeerManager peerManager = PeerManager.getInstance(getApplicationContext());
         peerManager.tasks();
@@ -375,26 +367,26 @@ public class MurmurService extends Service {
         // TODO(lerner): Don't just connect all willy-nilly every time we have
         // an opportunity. Have some kind of policy for when to connect.
         if (peers.size() > 0 && readyToConnect()) {
-            log.info(String.format("Can connect with %d peers", peers.size()));
+            Log.i(TAG, String.format("Can connect with %d peers", peers.size()));
             if(SecurityManager.getCurrentProfile(this).isRandomExchange()) {
-                log.info("Current security profile state that we should pick one random peer to interact with");
+                Log.i(TAG, "Current security profile state that we should pick one random peer to interact with");
                 Peer selectedPeer = pickBestPeer(peers);//peers.get(mRandom.nextInt(peers.size()));
                 peers.clear();
                 peers.add(selectedPeer);
                 ExchangeHistoryTracker.ExchangeHistoryItem historyItem
-                        = ExchangeHistoryTracker.getInstance().getHistoryItem(selectedPeer.address);
+                        = ExchangeHistoryTracker.getInstance(getApplicationContext()).getHistoryItem(selectedPeer.address);
                 if(historyItem != null){
-                    ExchangeHistoryTracker.getInstance().updatePickHistory(selectedPeer.address);
+                    ExchangeHistoryTracker.getInstance(getApplicationContext()).updatePickHistory(selectedPeer.address);
                 } else {
-                    ExchangeHistoryTracker.getInstance().updateHistory(this, selectedPeer.address);
+                    ExchangeHistoryTracker.getInstance(getApplicationContext()).updateHistory(this, selectedPeer.address);
                 }
             }
-            log.info(String.format("Checking %d peers", peers.size()));
+            Log.i(TAG, String.format("Checking %d peers", peers.size()));
             for(Peer peer : peers) {
-                log.debug("Checking peer:"+peer);
+                Log.d(TAG, "Checking peer:"+peer);
                 try {
                     if (peerManager.thisDeviceSpeaksTo(peer)) {
-                        log.debug("This device is in charge of starting conversation");
+                        Log.d(TAG, "This device is in charge of starting conversation");
                         // Connect to the peer, starting an exchange with the peer once
                         // connected. We only do this if thisDeviceSpeaksTo(peer), which
                         // checks whether we initiate conversations with this peer or
@@ -403,7 +395,7 @@ public class MurmurService extends Service {
 
                         //optimize connection using history tracker
                         if(USE_BACKOFF) {
-                            ExchangeHistoryTracker.ExchangeHistoryItem historyItem = ExchangeHistoryTracker.getInstance().getHistoryItem(peer.address);
+                            ExchangeHistoryTracker.ExchangeHistoryItem historyItem = ExchangeHistoryTracker.getInstance(getApplicationContext()).getHistoryItem(peer.address);
                             boolean hasHistory = historyItem != null;
                             boolean storeVersionChanged = false;
                             boolean waitedMuch = false;
@@ -415,28 +407,28 @@ public class MurmurService extends Service {
                             }
 
                             if (!hasHistory || storeVersionChanged || waitedMuch) {
-                                log.debug("Can connect with peer: " + peer);
+                                Log.d(TAG, "Can connect with peer: " + peer);
                                 connectTo(peer);
                             } else {
-                                log.debug("Backoff from peer: " + peer +
+                                Log.d(TAG, "Backoff from peer: " + peer +
                                         " [previously interacted:" + hasHistory + ", store ready:" + storeVersionChanged + " ,backoff timeout:" + waitedMuch + "]");
                             }
                         } else {
                             connectTo(peer);
                         }
                     } else {
-                        log.debug("Other device is in charge of starting conversation");
+                        Log.d(TAG, "Other device is in charge of starting conversation");
                     }
                 } catch (NoSuchAlgorithmException e) {
-                    log.error( "No such algorithm for hashing in thisDeviceSpeaksTo!? ",e);
+                    Log.e(TAG, "No such algorithm for hashing in thisDeviceSpeaksTo!? ",e);
                     return;
                 } catch (UnsupportedEncodingException e) {
-                    log.error( "Unsupported encoding exception in thisDeviceSpeaksTo!?" , e);
+                    Log.e(TAG, "Unsupported encoding exception in thisDeviceSpeaksTo!?" , e);
                     return;
                 }
             }
         } else {
-          log.info( String.format("Not connecting (%d peers, ready to connect is %s)", peers.size(), readyToConnect()));
+            Log.i(TAG,  String.format("Not connecting (%d peers, ready to connect is %s)", peers.size(), readyToConnect()));
         }
         mBackgroundTaskRunCount++;
 
@@ -451,11 +443,11 @@ public class MurmurService extends Service {
      */
     public void connectTo(Peer peer) {
       if (getConnecting() != null) {
-        log.warn( "connectTo() not connecting to " + peer + " -- already connecting to ("+getConnecting()+")");
+        Log.w(TAG, "connectTo() not connecting to " + peer + " -- already connecting to ("+getConnecting()+")");
         return;
       }
 
-      log.info( "connecting to " + peer);
+        Log.i(TAG, "connecting to " + peer);
       // TODO(lerner): Why not just use mPeerManager?
       PeerManager peerManager = PeerManager.getInstance(this);
 
@@ -464,10 +456,10 @@ public class MurmurService extends Service {
       // attempted. (One at a time now!)
       setConnecting(peer.address);
 
-      log.info( "Starting to connect to " + peer.toString());
+        Log.i(TAG, "Starting to connect to " + peer.toString());
       // The peer connection callback (defined elsewhere in the class) takes
       // the connect bluetooth socket and uses it to create a new Exchange.
-        if(mPeerConnectionCallback == null) log.info("Was starting to connect to "+ peer.toString()
+        if(mPeerConnectionCallback == null) Log.i(TAG, "Was starting to connect to "+ peer.toString()
                 +" but PeerConnectionCallback was null");
       mBluetoothSpeaker.connect(peer, mPeerConnectionCallback);
     }
@@ -479,10 +471,10 @@ public class MurmurService extends Service {
     /*package*/ PeerConnectionCallback mPeerConnectionCallback = new PeerConnectionCallback() {
       @Override
       public void success(BluetoothSocket socket) {
-        log.info("Callback says we're connected to " + socket.getRemoteDevice().toString());
+        Log.i(TAG, "Callback says we're connected to " + socket.getRemoteDevice().toString());
         if (socket.isConnected()) {
           mSocket = socket;
-          log.info( "Socket connected, attempting exchange");
+          Log.i(TAG, "Socket connected, attempting exchange");
           try {
               direction = 1;
               remoteAddress = socket.getRemoteDevice().getAddress();
@@ -497,18 +489,18 @@ public class MurmurService extends Service {
                 MurmurService.this.mExchangeCallback);
             (new Thread(mExchange)).start();
           } catch (IOException e) {
-            log.error( "Getting input/output stream from socket failed: " , e);
-            log.error( "Exchange not happening.");
+            Log.e(TAG, "Getting input/output stream from socket failed: " , e);
+            Log.e(TAG, "Exchange not happening.");
             MurmurService.this.cleanupAfterExchange();
           }
         } else {
-          log.warn( "But the socket claims not to be connected!");
+          Log.w(TAG, "But the socket claims not to be connected!");
           MurmurService.this.cleanupAfterExchange();
         }
       }
       @Override
       public void failure(String reason) {
-        log.info("Callback says we failed to connect: " + reason);
+        Log.i(TAG,"Callback says we failed to connect: " + reason);
         MurmurService.this.cleanupAfterExchange();
       }
     };
@@ -526,22 +518,22 @@ public class MurmurService extends Service {
       try {
         if (mSocket != null) {
             mSocket.close();
-            log.info("bluetooth socket closed");
+            Log.i(TAG, "bluetooth socket closed");
         }
       } catch (IOException e) {
-        log.warn( "Couldn't close bt socket: " , e);
+        Log.w(TAG, "Couldn't close bt socket: " , e);
       }
       try { 
         if (mBluetoothSpeaker.mSocket != null) {
             mBluetoothSpeaker.mSocket.close();
-            log.info( "bluetooth speaker socket closed");
+            Log.i(TAG, "bluetooth speaker socket closed");
         }
       } catch (IOException e) {
-        log.warn( "Couldn't close bt socket in BTSpeaker: " , e);
+        Log.w(TAG, "Couldn't close bt socket in BTSpeaker: " , e);
       }
         mSocket = null;
         mBluetoothSpeaker.mSocket = null;
-        log.debug("socket and BluetoothSpeaker socket has been set to null");
+        Log.d(TAG, "socket and BluetoothSpeaker socket has been set to null");
 
         direction = 0;
         remoteAddress = null;
@@ -560,8 +552,8 @@ public class MurmurService extends Service {
           boolean hasNew = false;
         List<MurmurMessage> newMessages = exchange.getReceivedMessages();
         int friendOverlap = exchange.getCommonFriends();
-        log.info( "Got " + newMessages.size() + " messages in exchangeCallback");
-        log.info( "Got " + friendOverlap + " common friends in exchangeCallback");
+        Log.i(TAG, "Got " + newMessages.size() + " messages in exchangeCallback");
+        Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
           Set<String> myFriends = mFriendStore.getAllFriends();
         for (MurmurMessage message : newMessages) {
           double stored = mMessageStore.getTrust(message.text);
@@ -579,7 +571,7 @@ public class MurmurService extends Service {
                 mMessageStore.setRead(message.text, false);
             }
           } catch (IllegalArgumentException e) {
-            log.error( String.format("Attempted to add/update message %s with trust (%f/%f)" +
+            Log.e(TAG, String.format("Attempted to add/update message %s with trust (%f/%f)" +
                                     ", %d friends, %d friends in common",
                                     message.text, newTrust, message.priority,
                                     myFriends.size(), friendOverlap));
@@ -588,24 +580,28 @@ public class MurmurService extends Service {
 
           if(hasNew){
               mMessageStore.updateStoreVersion();
-              ExchangeHistoryTracker.getInstance().incrementExchangeCount();
-              ExchangeHistoryTracker.getInstance().updateHistory(MurmurService.this, exchange.getPeerAddress());
+              ExchangeHistoryTracker.getInstance(getApplicationContext()).incrementExchangeCount();
+              ExchangeHistoryTracker.getInstance(getApplicationContext()).updateHistory(MurmurService.this, exchange.getPeerAddress());
               if(isAppInForeground()) {
                   Intent intent = new Intent();
                   intent.setAction(MessageStore.NEW_MESSAGE);
                   getApplicationContext().sendBroadcast(intent);
               } else {
-                  showUnreadMessagesNotification();
+                  // TODO: Add message handling logic
+                  // Here is where we need to decide if the message is for us or not and
+                  // put it into a packet queue or add it to a conversation.
+
+                  // showUnreadMessagesNotification();
               }
-          } else if(ExchangeHistoryTracker.getInstance().getHistoryItem(exchange.getPeerAddress()) != null){
+          } else if(ExchangeHistoryTracker.getInstance(getApplicationContext()).getHistoryItem(exchange.getPeerAddress()) != null){
               // Has history, should increment the attempts counter
-              ExchangeHistoryTracker.getInstance().updateAttemptsHistory(exchange.getPeerAddress());
-              if(USE_BACKOFF) log.debug("Exchange finished without receiving new messages, back-off timeout increased to:"+
-                    Math.min(BACKOFF_MAX , Math.pow(2, ExchangeHistoryTracker.getInstance().getHistoryItem(exchange.getPeerAddress()).attempts) * BACKOFF_FOR_ATTEMPT_MILLIS));
+              ExchangeHistoryTracker.getInstance(getApplicationContext()).updateAttemptsHistory(exchange.getPeerAddress());
+              if(USE_BACKOFF) Log.d(TAG, "Exchange finished without receiving new messages, back-off timeout increased to:"+
+                    Math.min(BACKOFF_MAX , Math.pow(2, ExchangeHistoryTracker.getInstance(getApplicationContext()).getHistoryItem(exchange.getPeerAddress()).attempts) * BACKOFF_FOR_ATTEMPT_MILLIS));
           } else {
               // No history file, create one
-              log.debug( "Exchange finished without receiving new messages from new peer, creating history track");
-              ExchangeHistoryTracker.getInstance().updateHistory(MurmurService.this, exchange.getPeerAddress());
+              Log.d(TAG, "Exchange finished without receiving new messages from new peer, creating history track");
+              ExchangeHistoryTracker.getInstance(getApplicationContext()).updateHistory(MurmurService.this, exchange.getPeerAddress());
           }
 
         MurmurService.this.cleanupAfterExchange();
@@ -613,19 +609,19 @@ public class MurmurService extends Service {
 
       @Override
       public void failure(Exchange exchange, String reason) {
-        log.error( "Exchange failed, reason: " + reason);
+        Log.e(TAG, "Exchange failed, reason: " + reason);
         MurmurService.this.cleanupAfterExchange();
       }
 
         @Override
         public void recover(Exchange exchange, String reason) {
             ServiceWatchDog.getInstance().notifyLastExchange();
-            log.error( "Exchange failed but data can be recovered, reason: " + reason);
+            Log.e(TAG, "Exchange failed but data can be recovered, reason: " + reason);
             boolean hasNew = false;
             List<MurmurMessage> newMessages = exchange.getReceivedMessages();
             int friendOverlap = Math.max(exchange.getCommonFriends(), 0);
-            log.info( "Got " + newMessages.size() + " messages in exchangeCallback");
-            log.info( "Got " + friendOverlap + " common friends in exchangeCallback");
+            Log.i(TAG, "Got " + newMessages.size() + " messages in exchangeCallback");
+            Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
             if(newMessages != null) {
                 for (MurmurMessage message : newMessages) {
                     Set<String> myFriends = mFriendStore.getAllFriends();
@@ -643,7 +639,7 @@ public class MurmurService extends Service {
                             mMessageStore.setRead(message.text, false);
                         }
                     } catch (IllegalArgumentException e) {
-                        log.error( String.format("Attempted to add/update message %s with trust (%f/%f)" +
+                        Log.e(TAG, String.format("Attempted to add/update message %s with trust (%f/%f)" +
                                         ", %d friends, %d friends in common",
                                 message.text, newTrust, message.priority,
                                 myFriends.size(), friendOverlap),e);
@@ -653,17 +649,21 @@ public class MurmurService extends Service {
 
             if(hasNew){
                 mMessageStore.updateStoreVersion();
-                ExchangeHistoryTracker.getInstance().incrementExchangeCount();
-                ExchangeHistoryTracker.getInstance().updateHistory(MurmurService.this, exchange.getPeerAddress());
+                ExchangeHistoryTracker.getInstance(getApplicationContext()).incrementExchangeCount();
+                ExchangeHistoryTracker.getInstance(getApplicationContext()).updateHistory(MurmurService.this, exchange.getPeerAddress());
                 if(isAppInForeground()) {
                     Intent intent = new Intent();
                     intent.setAction(MessageStore.NEW_MESSAGE);
                     getApplicationContext().sendBroadcast(intent);
                 } else {
-                    showUnreadMessagesNotification();
+                    // TODO: Add message handling logic
+                    // Here is where we need to decide if the message is for us or not and
+                    // put it into a packet queue or add it to a conversation.
+
+                    // showUnreadMessagesNotification();
                 }
             } else {
-                ExchangeHistoryTracker.getInstance().updateAttemptsHistory(exchange.getPeerAddress());
+                ExchangeHistoryTracker.getInstance(getApplicationContext()).updateAttemptsHistory(exchange.getPeerAddress());
             }
 
             MurmurService.this.cleanupAfterExchange();
@@ -723,7 +723,7 @@ public class MurmurService extends Service {
 
     /** Synchronized setter for connecting. */
     private synchronized void setConnecting(String connecting) {
-        log.debug("connection was set to:"+connecting);
+        Log.d(TAG, "connection was set to:"+connecting);
       this.connecting = connecting;
     }
 
@@ -750,7 +750,7 @@ public class MurmurService extends Service {
     /** This method check how many unread messages there are and display a notification
      * visible from the recent task pull down menu. this method should be called only
      * be called when the app itself is either closed or in the background.
-     */
+
     private void showUnreadMessagesNotification() {
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this , 0, intent,PendingIntent.FLAG_CANCEL_CURRENT);
@@ -789,6 +789,8 @@ public class MurmurService extends Service {
         nManager.cancel(NOTIFICATION_ID);
     }
 
+     */
+
     /** Check if the app have a living instance in the foreground
      *
      * @return true if the app is active and in the foreground, false otherwise
@@ -807,18 +809,18 @@ public class MurmurService extends Service {
         String btAddress = mBluetoothSpeaker.getAddress();
         if(mWifiDirectSpeaker != null) {
 
-            SharedPreferences pref = getSharedPreferences(MainActivity.PREF_FILE, Context.MODE_PRIVATE);
-            if(!pref.contains(MainActivity.WIFI_NAME)){
+            SharedPreferences pref = getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
+            if(!pref.contains(AppConstants.WIFI_NAME)){
                 if(BluetoothAdapter.getDefaultAdapter() != null) {
                     String oldName = BluetoothAdapter.getDefaultAdapter().getName();
-                    pref.edit().putString(MainActivity.WIFI_NAME, oldName).commit();
+                    pref.edit().putString(AppConstants.WIFI_NAME, oldName).commit();
                 }
             }
 
 
             mWifiDirectSpeaker.setWifiDirectUserFriendlyName(RSVP_PREFIX + btAddress);
             if (btAddress != null && (btAddress.equals(DUMMY_MAC_ADDRESS) || btAddress.equals(""))) {
-                log.warn( "Bluetooth speaker provided a dummy/blank bluetooth" +
+                Log.w(TAG, "Bluetooth speaker provided a dummy/blank bluetooth" +
                         " MAC address (" + btAddress + ") scheduling device name change.");
                 Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
@@ -829,7 +831,7 @@ public class MurmurService extends Service {
                 }, RENAME_DELAY);
             }
         } else{
-            log.warn( "setWifiDirectFriendlyName was called with null wifiDirectSpeaker");
+            Log.w(TAG, "setWifiDirectFriendlyName was called with null wifiDirectSpeaker");
         }
     }
 
@@ -839,7 +841,7 @@ public class MurmurService extends Service {
     }
 
     private Peer pickBestPeer(List<Peer> peers){
-        ExchangeHistoryTracker tracker = ExchangeHistoryTracker.getInstance();
+        ExchangeHistoryTracker tracker = ExchangeHistoryTracker.getInstance(getApplicationContext());
         Peer bestMatch = null;
         long bestMatchLastPicked = 0;
         for(Peer peer : peers){

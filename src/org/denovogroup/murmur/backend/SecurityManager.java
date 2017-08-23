@@ -34,7 +34,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import org.thoughtcrime.securesms.R;
-import org.thoughtcrime.securesms.murmur.backend.SecurityProfile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +59,7 @@ public class SecurityManager {
     public static final String MAC_KEY = "mac";
 
     // profile settings
-    // public static final int CUSTOM_PROFILE_NAME = R.id.radio_profile_custom;
+    public static final int CUSTOM_PROFILE_NAME = R.id.radio_profile_custom;
     private static final String PROFILE_NAME_KEY = "name";
     private static final String PROFILE_TIMESTAMP_KEY = "useTimestamp";
     private static final String PROFILE_PSEUDONYM_KEY = "usePseudonym";
@@ -88,8 +87,7 @@ public class SecurityManager {
     /** Default pseudonym value if none is stored */
     public static final String DEFAULT_PSEUDONYM = "";
 
-    /*
-    /** initiate the managers parameters such as the profiles list *
+    /** initiate the managers parameters such as the profiles list */
     private void init(){
         profiles = new ArrayList<>();
         profiles.add(new SecurityProfile(1)
@@ -133,13 +131,12 @@ public class SecurityManager {
                 .setMinContactsForHop(5)
         );
     }
-    */
 
     /** return the existing instance of the manager if exists. create new if not*/
     public static SecurityManager getInstance(){
         if(instance == null){
             instance = new SecurityManager();
-            // instance.init();
+            instance.init();
         }
         return instance;
     }
@@ -157,8 +154,7 @@ public class SecurityManager {
         return null;
     }
 
-    /*
-    /** read the currently set privacy profile from local storage *
+    /** read the currently set privacy profile from local storage */
     public static SecurityProfile getCurrentProfile(Context context){
         if(instance == null) getInstance();
 
@@ -198,10 +194,9 @@ public class SecurityManager {
 
         return customProfile;
     }
-    
 
     /** write the properties of specified profile as the current profile in the local storage.
-     * return true if specified name recognized and saved, false otherwise *
+     * return true if specified name recognized and saved, false otherwise */
     public static boolean setCurrentProfile(Context context, int profileName){
         if(instance == null) getInstance();
 
@@ -214,7 +209,7 @@ public class SecurityManager {
         return false;
     }
 
-    /** write the supplied privacy profile to local storage *
+    /** write the supplied privacy profile to local storage */
     public static void setCurrentProfile(Context context, SecurityProfile profile){
         if(instance == null) getInstance();
 
@@ -239,9 +234,8 @@ public class SecurityManager {
             pref.putInt(PROFILE_MIN_CONTACTS_FOR_HOP_KEY, profile.getMinContactsForHop());
             pref.commit();
 
-        // MurmurService.TIME_BETWEEN_EXCHANGES_MILLIS = profile.getCooldown() * 1000;
+        MurmurService.TIME_BETWEEN_EXCHANGES_MILLIS = profile.getCooldown() * 1000;
     }
-    */
 
     /** read the currently set user pseudonym from local storage */
     public static String getCurrentPseudonym(Context context){

@@ -8,6 +8,8 @@ import android.util.Pair;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import org.denovogroup.murmur.backend.FriendStore;
+import org.denovogroup.murmur.objects.HerdProtos;
 import org.thoughtcrime.securesms.ApplicationContext;
 import org.thoughtcrime.securesms.attachments.DatabaseAttachment;
 import org.thoughtcrime.securesms.attachments.PointerAttachment;
@@ -27,7 +29,6 @@ import org.thoughtcrime.securesms.database.MmsDatabase;
 import org.thoughtcrime.securesms.database.NoSuchMessageException;
 import org.thoughtcrime.securesms.database.PushDatabase;
 import org.thoughtcrime.securesms.database.SmsDatabase;
-import org.thoughtcrime.securesms.database.TextSecureDirectory;
 import org.thoughtcrime.securesms.database.ThreadDatabase;
 import org.thoughtcrime.securesms.groups.GroupMessageProcessor;
 import org.thoughtcrime.securesms.mms.IncomingMediaMessage;
@@ -35,8 +36,6 @@ import org.thoughtcrime.securesms.mms.MmsException;
 import org.thoughtcrime.securesms.mms.OutgoingExpirationUpdateMessage;
 import org.thoughtcrime.securesms.mms.OutgoingMediaMessage;
 import org.thoughtcrime.securesms.mms.OutgoingSecureMediaMessage;
-import org.thoughtcrime.securesms.murmur.backend.FriendStore;
-import org.thoughtcrime.securesms.murmur.objects.HerdProtos;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.recipients.RecipientFactory;
 import org.thoughtcrime.securesms.recipients.Recipients;
@@ -181,10 +180,10 @@ public class PushDecryptJob extends ContextJob {
         // TODO: Add logic to handle trust of a number that tries to do a handshake.
         friendStore.addFriend(envelope.getSource(), herdMessage.getPublicDevieID(), FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource());
 
-        if(herdMessage.hasMessageType() && herdMessage.getMessageType() == SendHerdHandshakeJob.TYPE_REQUEST) {
+        if(herdMessage.hasMessageType() && herdMessage.getMessageType() == SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST) {
           ApplicationContext.getInstance(context)
                   .getJobManager()
-                  .add(new SendHerdHandshakeJob(context, envelope.getSource(), SendHerdHandshakeJob.TYPE_RESPONSE));
+                  .add(new SendHerdMessageJob(context, envelope.getSource(), SendHerdMessageJob.TYPE_HANDSHAKE_RESPONSE));
         }
         return;
       }

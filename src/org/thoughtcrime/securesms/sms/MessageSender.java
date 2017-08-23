@@ -25,6 +25,7 @@ import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.crypto.MasterSecretUnion;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
 import org.thoughtcrime.securesms.database.EncryptingSmsDatabase;
+import org.thoughtcrime.securesms.database.MessagingDatabase;
 import org.thoughtcrime.securesms.database.MmsDatabase;
 import org.thoughtcrime.securesms.database.NotInDirectoryException;
 import org.thoughtcrime.securesms.database.SmsDatabase;
@@ -35,6 +36,7 @@ import org.thoughtcrime.securesms.jobs.MmsSendJob;
 import org.thoughtcrime.securesms.jobs.PushGroupSendJob;
 import org.thoughtcrime.securesms.jobs.PushMediaSendJob;
 import org.thoughtcrime.securesms.jobs.PushTextSendJob;
+import org.thoughtcrime.securesms.jobs.SendHerdMessageJob;
 import org.thoughtcrime.securesms.jobs.SmsSendJob;
 import org.thoughtcrime.securesms.mms.OutgoingMediaMessage;
 import org.thoughtcrime.securesms.push.AccountManagerFactory;
@@ -57,6 +59,36 @@ import org.thoughtcrime.securesms.mms.MmsException;
 public class MessageSender {
 
   private static final String TAG = MessageSender.class.getSimpleName();
+
+  public static long send(final Context context,
+                          final MasterSecret masterSecret,
+                          final OutgoingTextMessage message,
+                          final long threadId,
+                          final SmsDatabase.InsertListener insertListener)
+  {
+    EncryptingSmsDatabase database    = DatabaseFactory.getEncryptingSmsDatabase(context);
+    Recipients            recipients  = message.getRecipients();
+
+    long allocatedThreadId;
+
+    if (threadId == -1) {
+      allocatedThreadId = DatabaseFactory.getThreadDatabase(context).getThreadIdFor(recipients);
+    } else {
+      allocatedThreadId = threadId;
+    }
+
+    long time = System.currentTimeMillis();
+
+    long messageId = database.insertMessageOutbox(new MasterSecretUnion(masterSecret), allocatedThreadId,
+                                                  message, false, time, insertListener);
+
+    // Marking message as sent, but well, who knows :P
+    database.markAsSent(messageId, true);
+
+    sendHerd(context, recipients, message, messageId);
+
+    return allocatedThreadId;
+  }
 
   public static long send(final Context context,
                           final MasterSecret masterSecret,
@@ -201,6 +233,11 @@ public class MessageSender {
       database.markExpireStarted(messageId);
       expiringMessageManager.scheduleDeletion(messageId, true, expiresIn);
     }
+  }
+
+  private static void sendHerd(Context context, Recipients recipients, OutgoingTextMessage message, long messageId) {
+    JobManager jobManager = ApplicationContext.getInstance(context).getJobManager();
+    jobManager.add(new SendHerdMessageJob(context, recipients.getPrimaryRecipient().getNumber(), message, SendHerdMessageJob.TYPE_MESSAGE, messageId));
   }
 
   private static void sendTextPush(Context context, Recipients recipients, long messageId) {

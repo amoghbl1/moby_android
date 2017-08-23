@@ -1418,6 +1418,16 @@
     <string name="profile_custom_annotation">Recommended only for advanced users</string>
     <string name="AndroidManifest__murmur_settings">Configure Murmur Settings</string>
     <string name="murmur_settings_details">Configure Murmur here</string>
+    <string name="notification_no_bluetooth_message">Please turn on Bluetooth or switch to Offline mode</string>
+    <string name="notification_no_bluetooth_title">Connection Error: Bluetooth is off</string>
+    <string name="error_notification_action_turnon_bt">Turn on</string>
+    <string name="error_notification_action_off_service">Switch to Offline</string>
+    <string name="error_notification_action_onwifi">Turn on</string>
+    <string name="notification_no_wifi_title">Connection Error: WiFi is off</string>
+    <string name="notification_no_wifi_message">Please turn on WiFi or switch to Offline mode</string>
+    <string name="notification_connection_error_title">Connection Error</string>
+    <string name="notification_connection_error_message">Turn on BT/WiFi or switch to Offline</string>
+
     <!-- EOF -->
 
 </resources>

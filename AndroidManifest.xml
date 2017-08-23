@@ -84,6 +84,8 @@
     <uses-permission android:name="android.permission.WRITE_CALL_LOG"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+
     <permission android:name="org.thoughtcrime.securesms.permission.C2D_MESSAGE"
                 android:protectionLevel="signature" />
     <uses-permission android:name="org.thoughtcrime.securesms.permission.C2D_MESSAGE" />
@@ -430,6 +432,8 @@
             <action android:name="android.service.chooser.ChooserTargetService" />
         </intent-filter>
     </service>
+
+    <service android:enabled="true" android:name="org.denovogroup.murmur.backend.MurmurService"/>
 
     <receiver android:name=".gcm.GcmBroadcastReceiver" android:permission="com.google.android.c2dm.permission.SEND" >
         <intent-filter>

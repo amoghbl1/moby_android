@@ -43,9 +43,8 @@ import android.graphics.drawable.BitmapDrawable;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 
-import org.apache.log4j.Logger;
-import org.denovogroup.murmur.R;
-import org.denovogroup.murmur.ui.MainActivity;
+import org.thoughtcrime.securesms.R;
+import org.whispersystems.libsignal.logging.Log;
 
 import java.lang.ref.WeakReference;
 import java.util.Date;
@@ -68,7 +67,6 @@ public class ServiceWatchDog {
     private Date lastExchange;
 
     private final static String TAG = "ServiceWatchDog";
-    private static final Logger log = Logger.getLogger(TAG);
 
     private static ServiceWatchDog instance;
 
@@ -116,21 +114,21 @@ public class ServiceWatchDog {
 
 
     private void restartService(){
-        log.debug("attempting recovery");
+        Log.d(TAG, "attempting recovery");
 
         if(serviceWeakReference == null){
-            log.error("Watchdog service reference not been initialized");
+            Log.e(TAG, "Watchdog service reference not been initialized");
             return;
         }
 
         MurmurService service = serviceWeakReference.get();
 
         if(service == null){
-            log.error("Watchdog cannot recover service, service reference is null");
+            Log.e(TAG, "Watchdog cannot recover service, service reference is null");
             return;
         }
 
-        if(!service.getSharedPreferences(MainActivity.PREF_FILE, Context.MODE_PRIVATE).getBoolean(MainActivity.IS_APP_ENABLED, true)){
+        if(!service.getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE).getBoolean(AppConstants.IS_APP_ENABLED, true)){
             service.stopSelf();
             return;
         }
@@ -142,7 +140,7 @@ public class ServiceWatchDog {
 
         alarmManager.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + WAIT_BEFORE_RESTART, pendingRestart);
 
-        log.debug("restarting service");
+        Log.d(TAG, "restarting service");
         service.stopSelf();
     }
 
@@ -170,7 +168,7 @@ public class ServiceWatchDog {
 
         boolean bluetoothEnabled = (adapter != null && adapter.isEnabled());
 
-        WifiManager manager = (WifiManager) service.getSystemService(Context.WIFI_SERVICE);
+        WifiManager manager = (WifiManager) service.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
         boolean wifiEnabled = (manager != null && manager.isWifiEnabled());
 
@@ -182,7 +180,7 @@ public class ServiceWatchDog {
 
         NotificationManager mNotificationManager = (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        boolean serviceIsOn = service.getSharedPreferences(MainActivity.PREF_FILE,Context.MODE_PRIVATE).getBoolean(MainActivity.IS_APP_ENABLED, true);
+        boolean serviceIsOn = service.getSharedPreferences(AppConstants.PREF_FILE,Context.MODE_PRIVATE).getBoolean(AppConstants.IS_APP_ENABLED, true);
 
         if((wifiEnabled && bluetoothEnabled) || !serviceIsOn){
             mNotificationManager.cancel(notificationId);
@@ -193,9 +191,9 @@ public class ServiceWatchDog {
         Resources res = service.getResources();
         BitmapDrawable largeIconDrawable;
         if(Build.VERSION.SDK_INT >= 21){
-            largeIconDrawable = (BitmapDrawable) res.getDrawable(R.mipmap.ic_launcher, null);
+            largeIconDrawable = (BitmapDrawable) res.getDrawable(R.drawable.icon, null);
         } else {
-            largeIconDrawable = (BitmapDrawable) res.getDrawable(R.mipmap.ic_launcher);
+            largeIconDrawable = (BitmapDrawable) res.getDrawable(R.drawable.icon);
         }
         Bitmap largeIcon = largeIconDrawable.getBitmap();
 
@@ -215,7 +213,7 @@ public class ServiceWatchDog {
                 .setContentText(service.getText(R.string.notification_connection_error_message))
                 .setLargeIcon(largeIcon)
                 //.setContentIntent(pendingIntent)
-                .setSmallIcon(R.mipmap.ic_error)
+                .setSmallIcon(R.drawable.error_round)
                 //.addAction(R.drawable.blank_square, context.getString(R.string.error_notification_action_turnon_bt), pendingOnIntent)
                 .addAction(R.drawable.blank_square, service.getString(R.string.error_notification_action_off_service), pendingOffIntent)
                 .build();

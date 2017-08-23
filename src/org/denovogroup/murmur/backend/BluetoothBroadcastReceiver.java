@@ -46,9 +46,8 @@ import android.os.Build;
 import android.os.Parcelable;
 import android.provider.Settings;
 
-import org.apache.log4j.Logger;
-import org.denovogroup.murmur.R;
-
+import org.thoughtcrime.securesms.R;
+import org.whispersystems.libsignal.logging.Log;
 
 /**
  * Receives events about Bluetooth.
@@ -56,12 +55,10 @@ import org.denovogroup.murmur.R;
 public class BluetoothBroadcastReceiver extends BroadcastReceiver {
 
   /** Included in Android log messages. */
-  public static final String TAG = "BtBroadcastReceiver";
+  public static final String TAG = "BluetoothBroadcastReceiver";
 
   /** A default value to be returned when getting extras. */
   private static final int DEFAULT_INT = -500;
-
-  private static final Logger log = Logger.getLogger(TAG);
 
   /**
    * @param context A context, from which to access the Bluetooth subsystem.
@@ -81,7 +78,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
     intentFilter.addAction(BluetoothDevice.ACTION_FOUND);
     intentFilter.addAction(BluetoothDevice.ACTION_NAME_CHANGED);
     intentFilter.addAction(BluetoothDevice.ACTION_UUID);
-      log.info( "Registering Bluetooth receiver");
+      Log.i(TAG, "Registering Bluetooth receiver");
     context.registerReceiver(this, intentFilter);
   }
 
@@ -115,7 +112,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
       onBluetoothBroadcastRemoteUUID(context, intent);
     } else {
       // TODO(lerner): This shouldn't happen, exception?
-      log.debug( "Received an event we weren't expecting: " + action);
+      Log.d(TAG,  "Received an event we weren't expecting: " + action);
     }
   }
 
@@ -131,7 +128,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
     int previousState = intent.getIntExtra(BluetoothAdapter.EXTRA_PREVIOUS_STATE, DEFAULT_INT);
     String currentStateString = getBTStateStringFromCode(currentState);
     String previousStateString = getBTStateStringFromCode(previousState);
-      log.debug(String.format("BT state change. %s (%d) to %s (%d) ", previousStateString,
+      Log.d(TAG, String.format("BT state change. %s (%d) to %s (%d) ", previousStateString,
             previousState,
             currentStateString,
             currentState));
@@ -173,9 +170,9 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
         Resources res = context.getResources();
         BitmapDrawable largeIconDrawable;
         if(Build.VERSION.SDK_INT >= 21){
-            largeIconDrawable = (BitmapDrawable) res.getDrawable(R.mipmap.ic_launcher, null);
+            largeIconDrawable = (BitmapDrawable) res.getDrawable(R.drawable.icon_dialog, null);
         } else {
-            largeIconDrawable = (BitmapDrawable) res.getDrawable(R.mipmap.ic_launcher);
+            largeIconDrawable = (BitmapDrawable) res.getDrawable(R.drawable.icon_dialog);
         }
         Bitmap largeIcon = largeIconDrawable.getBitmap();
 
@@ -195,7 +192,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
                 .setContentText(context.getText(R.string.notification_no_bluetooth_message))
                 .setLargeIcon(largeIcon)
                 .setContentIntent(pendingIntent)
-                .setSmallIcon(R.mipmap.ic_error)
+                .setSmallIcon(R.drawable.error_round)
                 .addAction(R.drawable.blank_square, context.getString(R.string.error_notification_action_turnon_bt), pendingOnIntent)
                 .addAction(R.drawable.blank_square, context.getString(R.string.error_notification_action_off_service), pendingOffIntent)
                 .build();
@@ -231,7 +228,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
     for (Parcelable uuid : uuids) {
       // Log.d(TAG, String.format("Remote device (%s); UUID: %s ", device, ((ParcelUuid) uuid).toString()));
     }
-      log.info( "Bluetooth broadcast: remoteUUID");
+      Log.i(TAG, "Bluetooth broadcast: remoteUUID");
   }
 
   /**
@@ -242,7 +239,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
    * @param intent The intent associated with the broadcast of this event.
    */
   private void onBluetoothRemoteNameChange(Context context, Intent intent) {
-    log.debug( "Remote device's name changed.");
+    Log.d(TAG,  "Remote device's name changed.");
   }
 
   /**
@@ -256,7 +253,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
   private void onBluetoothPeerFound(Context context, Intent intent) {
     // TODO(lerner): murmur may want to stop doing its thing if other apps
     // are causing seeking?
-    log.debug( "Peer found broadcast received.");
+    Log.d(TAG,  "Peer found broadcast received.");
   }
 
   /**
@@ -267,7 +264,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
    * @param intent The intent associated with the broadcast of this event.
    */
   private void onBluetoothRemoteDeviceClassChange(Context context, Intent intent) {
-    log.debug("Remote device's class changed.");
+    Log.d(TAG, "Remote device's class changed.");
   }
 
   /**
@@ -280,7 +277,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
   private void onBluetoothBondStateChange(Context context, Intent intent) {
     // TODO(lerner): murmur may want to stop doing its thing if other apps
     // are causing pairing and such?
-    log.debug("Bond state change notification received.");
+    Log.d(TAG, "Bond state change notification received.");
   }
 
   /**
@@ -294,7 +291,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
   private void onBluetoothDisconnectRequested(Context context, Intent intent) {
     BluetoothDevice device;
     device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-    log.info( "Bluetooth broadcast: disconnected! (from " + device + ")");
+    Log.i(TAG, "Bluetooth broadcast: disconnected! (from " + device + ")");
   }
 
   /**
@@ -304,7 +301,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
   private void onBluetoothDisconnected(Context context, Intent intent) {
     BluetoothDevice device;
     device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-    log.info( "Bluetooth broadcast: disconnected! (from " + device + ")");
+    Log.i(TAG, "Bluetooth broadcast: disconnected! (from " + device + ")");
   }
 
   /**
@@ -314,7 +311,7 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
   private void onBluetoothConnected(Context context, Intent intent) {
     BluetoothDevice device;
     device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-      log.info( "Bluetooth broadcast: connected! (to " + device + ")");
+    Log.i(TAG, "Bluetooth broadcast: connected! (to " + device + ")");
   }
 
   /**

@@ -33,18 +33,13 @@ package org.denovogroup.murmur.backend;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Base64;
 import android.util.Log;
 
 import org.spongycastle.crypto.AsymmetricCipherKeyPair;
-import org.thoughtcrime.securesms.murmur.backend.Crypto;
-import org.thoughtcrime.securesms.murmur.backend.StorageBase;
-import org.thoughtcrime.securesms.murmur.backend.Utils;
 
-import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;

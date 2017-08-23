@@ -1,9 +1,7 @@
 package org.thoughtcrime.securesms;
 
 import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentTransaction;
@@ -12,18 +10,8 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import org.thoughtcrime.securesms.crypto.MasterSecret;
-import org.thoughtcrime.securesms.database.DatabaseFactory;
-import org.thoughtcrime.securesms.database.IdentityDatabase;
-import org.thoughtcrime.securesms.database.TextSecureDirectory;
-import org.thoughtcrime.securesms.murmur.ui.MurmurProfileFragment;
-import org.thoughtcrime.securesms.recipients.Recipient;
-import org.thoughtcrime.securesms.recipients.RecipientFactory;
-import org.thoughtcrime.securesms.recipients.Recipients;
+import org.denovogroup.murmur.ui.MurmurProfileFragment;
 import org.thoughtcrime.securesms.util.DynamicTheme;
-import org.whispersystems.libsignal.ecc.ECPublicKey;
-import org.whispersystems.libsignal.util.guava.Optional;
-
-import java.util.List;
 
 /**
  * Activity for submitting logcat logs to a pastebin service.
@@ -51,6 +39,7 @@ public class MurmurSettingsActivity extends PassphraseRequiredActionBarActivity 
         transaction.replace(R.id.fragment_container, fragment);
         transaction.commit();
 
+        /*
         new AsyncTask<Void, Void, Void>() {
 
             @Override
@@ -74,6 +63,9 @@ public class MurmurSettingsActivity extends PassphraseRequiredActionBarActivity 
                 return null;
             }
         }.execute();
+        */
+
+
 
     }
 
