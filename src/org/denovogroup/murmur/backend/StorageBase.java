@@ -72,12 +72,12 @@ public class StorageBase {
     /**
      * A handle for the preferences store that this instance is using to back all storage calls.
      */
-    private SharedPreferences store;
+    private SharedPreferences sharedPreferences;
 
     /**
      * A handle for the editor that allows us to modify data in the store.
      */
-    private SharedPreferences.Editor editor;
+    private SharedPreferences.Editor sharedPreferencesEditor;
 
     /**
      * The default local preferences file name used for storing all data.
@@ -97,8 +97,8 @@ public class StorageBase {
             throw new IllegalArgumentException("encryptionMode " + encryptionMode + " not supported.");
         }
 
-        store = context.getSharedPreferences(STORE_FILE_NAME, Context.MODE_PRIVATE);
-        editor = store.edit();
+        sharedPreferences = context.getSharedPreferences(STORE_FILE_NAME, Context.MODE_PRIVATE);
+        sharedPreferencesEditor = sharedPreferences.edit();
     }
 
     /**
@@ -109,10 +109,10 @@ public class StorageBase {
      */
     public void put(String key, String value) {
         // TODO(barath): Change this storage approach once we are encrypting.
-        editor.putString(key, value);
+        sharedPreferencesEditor.putString(key, value);
 
         // TODO(barath): Consider whether we should use .commit() instead of apply().
-        editor.commit();
+        sharedPreferencesEditor.commit();
     }
 
     /**
@@ -140,10 +140,10 @@ public class StorageBase {
      */
     public void putSet(String key, Set<String> values) {
         // TODO(barath): Change this storage approach once we are encrypting.
-        editor.putStringSet(key, values);
+        sharedPreferencesEditor.putStringSet(key, values);
 
         // TODO(barath): Consider whether we should use .commit() instead of apply().
-        boolean added = editor.commit();
+        boolean added = sharedPreferencesEditor.commit();
     }
 
     /**
@@ -154,10 +154,10 @@ public class StorageBase {
      */
     public void putFloat(String key, float value) {
         // TODO(barath): Change this storage approach once we are encrypting.
-        editor.putFloat(key, value);
+        sharedPreferencesEditor.putFloat(key, value);
 
         // TODO(barath): Consider whether we should use .commit() instead of apply().
-        editor.commit();
+        sharedPreferencesEditor.commit();
     }
 
     /**
@@ -170,10 +170,10 @@ public class StorageBase {
         // TODO(barath): Change this storage approach once we are encrypting.
         // Doubles can't be stored directly, so we have to store them as converted
         // to longs, since longs have the same number of bits.
-        editor.remove(key);
+        sharedPreferencesEditor.remove(key);
 
         // TODO(barath): Consider whether we should use .commit() instead of apply().
-        editor.commit();
+        sharedPreferencesEditor.commit();
     }
 
     /**
@@ -186,10 +186,10 @@ public class StorageBase {
         // TODO(barath): Change this storage approach once we are encrypting.
         // Doubles can't be stored directly, so we have to store them as converted
         // to longs, since longs have the same number of bits.
-        editor.putLong(key, Double.doubleToLongBits(value));
+        sharedPreferencesEditor.putLong(key, Double.doubleToLongBits(value));
 
         // TODO(barath): Consider whether we should use .commit() instead of apply().
-        boolean added = editor.commit();
+        boolean added = sharedPreferencesEditor.commit();
     }
 
     /**
@@ -200,35 +200,35 @@ public class StorageBase {
      */
     public void putInt(String key, int value) {
         // TODO(barath): Change this storage approach once we are encrypting.
-        editor.putInt(key, value);
+        sharedPreferencesEditor.putInt(key, value);
 
         // TODO(barath): Consider whether we should use .commit() instead of apply().
-        editor.commit();
+        sharedPreferencesEditor.commit();
     }
 
     /**
      * Stores the given long in the Murmur generic store.
      *
      * @param key   The key under which to store the data.
-     * @param value The value to store.
+     * @param value The value to sharedPreferencesEditor
      */
     public void putLong(String key, long value) {
         // TODO(barath): Change this storage approach once we are encrypting.
-        editor.putLong(key, value);
+        sharedPreferencesEditor.putLong(key, value);
 
         // TODO(barath): Consider whether we should use .commit() instead of apply().
-        editor.commit();
+        sharedPreferencesEditor.commit();
     }
 
     /**
      * Retrieves the value associated with the given key.
      *
-     * @param key The key under which to retrieve a value from the store.
+     * @param key The key under which to retrieve a value from the sharedPreferencesEditor
      * @return The value requested or null if not found.
      */
     public String get(String key) {
         // TODO(barath): Change this retrieval approach once we are encrypting.
-        return store.getString(key, null);
+        return sharedPreferences.getString(key, null);
     }
 
     /**
@@ -255,7 +255,7 @@ public class StorageBase {
      */
     public Set<String> getSet(String key) {
         // TODO(barath): Change this retrieval approach once we are encrypting.
-        Set<String> stringSet = store.getStringSet(key, null);
+        Set<String> stringSet = sharedPreferences.getStringSet(key, null);
         /* This is required in order to return an editable version of the set (it is forbidden
            to edit the set returned from the shared preferences directly) */
         if(stringSet != null) {
@@ -274,7 +274,7 @@ public class StorageBase {
      */
     public float getFloat(String key, float defvalue) {
         // TODO(barath): Change this retrieval approach once we are encrypting.
-        return store.getFloat(key, defvalue);
+        return sharedPreferences.getFloat(key, defvalue);
     }
 
     /**
@@ -289,7 +289,7 @@ public class StorageBase {
         // Stored as a long, so we have to convert it back to a double as we retrieve it.
         // This is because SharedPreferences can't store doubles directly, but
         // longs have the same number of bits as a double.
-        return Double.longBitsToDouble(store.getLong(key, Double.doubleToLongBits(defvalue)));
+        return Double.longBitsToDouble(sharedPreferences.getLong(key, Double.doubleToLongBits(defvalue)));
     }
 
     /**
@@ -301,7 +301,7 @@ public class StorageBase {
      */
     public int getInt(String key, int defvalue) {
         // TODO(barath): Change this retrieval approach once we are encrypting.
-        return store.getInt(key, defvalue);
+        return sharedPreferences.getInt(key, defvalue);
     }
 
     /**
@@ -313,6 +313,6 @@ public class StorageBase {
      */
     public long getLong(String key, long defvalue) {
         // TODO(barath): Change this retrieval approach once we are encrypting.
-        return store.getLong(key, defvalue);
+        return sharedPreferences.getLong(key, defvalue);
     }
 }

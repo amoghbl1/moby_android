@@ -48,7 +48,7 @@ import java.util.List;
 public class ExchangeHistoryTracker {
 
     private static final String TAG = "ExchangeHistoryTracker";
-    
+
     private static ExchangeHistoryTracker instance;
 
     private List<ExchangeHistoryItem> history = new ArrayList<>();
@@ -67,8 +67,8 @@ public class ExchangeHistoryTracker {
 
     private ExchangeHistoryTracker(Context context) {
         this.mContext = context;
-        //an empty private constructor to enforce singleton pattern.
-        exchangeCount = mContext.getSharedPreferences("count",Context.MODE_PRIVATE).getInt("count",0);
+        SharedPreferences sharedPreferences = mContext.getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
+        exchangeCount = sharedPreferences.getInt(AppConstants.EXCHANGE_COUNT, 0);
 
     }
 
@@ -152,14 +152,14 @@ public class ExchangeHistoryTracker {
 
     public void incrementExchangeCount(){
         exchangeCount++;
-        SharedPreferences preferences = this.mContext.getSharedPreferences("count",Context.MODE_PRIVATE);
-        preferences.edit().putInt("count",exchangeCount).commit();
+        SharedPreferences preferences = this.mContext.getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
+        preferences.edit().putInt(AppConstants.EXCHANGE_COUNT, exchangeCount).commit();
     }
 
     public void resetExchangeCount(){
         exchangeCount = 0;
-        SharedPreferences preferences = this.mContext.getSharedPreferences("count",Context.MODE_PRIVATE);
-        preferences.edit().putInt("count",exchangeCount).commit();
+        SharedPreferences preferences = this.mContext.getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
+        preferences.edit().putInt(AppConstants.EXCHANGE_COUNT, exchangeCount).commit();
     }
 
     public class ExchangeHistoryItem{

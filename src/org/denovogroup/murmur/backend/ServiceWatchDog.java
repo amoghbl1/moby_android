@@ -180,7 +180,7 @@ public class ServiceWatchDog {
 
         NotificationManager mNotificationManager = (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        boolean serviceIsOn = service.getSharedPreferences(AppConstants.PREF_FILE,Context.MODE_PRIVATE).getBoolean(AppConstants.IS_APP_ENABLED, true);
+        boolean serviceIsOn = service.getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE).getBoolean(AppConstants.IS_APP_ENABLED, true);
 
         if((wifiEnabled && bluetoothEnabled) || !serviceIsOn){
             mNotificationManager.cancel(notificationId);

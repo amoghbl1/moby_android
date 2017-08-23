@@ -129,8 +129,8 @@ public class MurmurService extends Service {
                 WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 if(wifiManager != null) wifiManager.setWifiEnabled(true);
             } else{
-                SharedPreferences pref = getSharedPreferences(AppConstants.PREF_FILE, MODE_PRIVATE);
-                pref.edit().putBoolean(AppConstants.IS_APP_ENABLED, false).commit();
+                SharedPreferences sharedPreferences = getSharedPreferences(AppConstants.PREF_FILE, MODE_PRIVATE);
+                sharedPreferences.edit().putBoolean(AppConstants.IS_APP_ENABLED, false).commit();
                 MurmurService.this.stopSelf();
             }
         }
@@ -294,10 +294,10 @@ public class MurmurService extends Service {
         }
         Log.d(TAG, "MurmurService onDestroy");
       mBackgroundExecution.cancel(true);
-        SharedPreferences pref = getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
-        if(pref.contains(AppConstants.WIFI_NAME) && mWifiDirectSpeaker != null){
+        SharedPreferences sharedPreferences = getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
+        if(sharedPreferences.contains(AppConstants.WIFI_NAME) && mWifiDirectSpeaker != null){
             Log.d(TAG, "Restoring wifi name");
-            mWifiDirectSpeaker.setWifiDirectUserFriendlyName(pref.getString(AppConstants.WIFI_NAME, ""));
+            mWifiDirectSpeaker.setWifiDirectUserFriendlyName(sharedPreferences.getString(AppConstants.WIFI_NAME, ""));
         }
 
         mPeerManager.forgetAllPeers();
@@ -809,11 +809,11 @@ public class MurmurService extends Service {
         String btAddress = mBluetoothSpeaker.getAddress();
         if(mWifiDirectSpeaker != null) {
 
-            SharedPreferences pref = getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
-            if(!pref.contains(AppConstants.WIFI_NAME)){
+            SharedPreferences sharedPreferences = getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
+            if(!sharedPreferences.contains(AppConstants.WIFI_NAME)){
                 if(BluetoothAdapter.getDefaultAdapter() != null) {
                     String oldName = BluetoothAdapter.getDefaultAdapter().getName();
-                    pref.edit().putString(AppConstants.WIFI_NAME, oldName).commit();
+                    sharedPreferences.edit().putString(AppConstants.WIFI_NAME, oldName).commit();
                 }
             }
 

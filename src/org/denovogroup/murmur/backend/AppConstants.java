@@ -6,9 +6,9 @@ package org.denovogroup.murmur.backend;
 
 public class AppConstants {
 
-    public static final String PREF_FILE = "settings";
+    public static final String PREF_FILE = "MurmurPrefs";
 
     public static final String IS_APP_ENABLED = "isEnabled";
-
+    public static final String EXCHANGE_COUNT = "exchangeCount";
     public static final String WIFI_NAME = "wifiname";
 }

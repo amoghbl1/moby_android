@@ -570,8 +570,8 @@ public class WifiDirectSpeaker {
 
         if(mContext == null) return;
 
-        SharedPreferences pref = context.getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
-        if(!pref.getBoolean(AppConstants.IS_APP_ENABLED, true)){
+        SharedPreferences sharedPreferences = context.getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
+        if(!sharedPreferences.getBoolean(AppConstants.IS_APP_ENABLED, true)){
             return;
         }
 
