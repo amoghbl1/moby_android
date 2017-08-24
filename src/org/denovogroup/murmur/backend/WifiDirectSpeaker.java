@@ -34,8 +34,10 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -75,7 +77,7 @@ import java.util.Date;
  * TODO(lerner): Implement the ability to send messages that aren't just
  * pings to other devices, from higher levels of the app.
  */
-public class WifiDirectSpeaker {
+public class WifiDirectSpeaker extends BroadcastReceiver{
   /** 
    * A default int value to be returned when getIntExtra fails to find
    * the requested key.
@@ -181,13 +183,13 @@ public class WifiDirectSpeaker {
     // Wifi Direct subsystem. When these events arrive, the onReceive method
     // of this class is called, which dispatches them to other instance methods,
     // one per event.
-    /*IntentFilter intentFilter = new IntentFilter();
+    IntentFilter intentFilter = new IntentFilter();
     intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
     intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
     intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
     intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
     intentFilter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION);
-    context.registerReceiver(this, intentFilter);*/
+    context.registerReceiver(this, intentFilter);
 
       WifiManager wifi = (WifiManager)context.getSystemService(Context.WIFI_SERVICE);
       if (!wifi.isWifiEnabled()){

@@ -238,13 +238,12 @@ public class MurmurService extends Service {
 
         mMessageStore = MessageStore.getInstance(this);
 
-        setWifiDirectFriendlyName(); //TODO loop this periodically until name returned to receiver is appropriate, if name changed again and is not apropriate schedual it again
+        setWifiDirectFriendlyName(); //TODO loop this periodically until name returned to receiver is appropriate, if name changed again and is not apropriate schedule  it again
         mWifiDirectSpeaker.setmSeekingDesired(true);
 
         // Schedule the background task thread to run occasionally.
         mScheduleTaskExecutor = Executors.newScheduledThreadPool(1);
-        // TODO(lerner): Decide if 1 second is an appropriate time interval for
-        // the tasks.
+        // TODO amoghbl1: Make this executor some kind of a build up back off thing, constant time is a bad idea.
         mBackgroundExecution = mScheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
             public void run() {
                 try {
@@ -253,7 +252,7 @@ public class MurmurService extends Service {
                     Log.e(TAG, "Unhandled exception during backgroundTasks:" + e.getMessage());
                 }
             }
-        }, 0, 1, TimeUnit.SECONDS);
+        }, 0, 5, TimeUnit.SECONDS);
 
         mCleanupExecution = mScheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
             @Override
@@ -359,7 +358,8 @@ public class MurmurService extends Service {
 
         // TODO(lerner): Why not just use mPeerManager?
         PeerManager peerManager = PeerManager.getInstance(getApplicationContext());
-        peerManager.tasks();
+        mPeerManager.tasks();
+        // peerManager.tasks();
         if(!mBluetoothSpeaker.tasks()) return;
         if(!mWifiDirectSpeaker.tasks()) return;
 

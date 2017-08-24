@@ -323,6 +323,9 @@ public class BluetoothSpeaker {
       Log.i(TAG, "mServerSocket:"+(mServerSocket == null)
               +" mBluetoothAdapter:"+(mBluetoothAdapter != null)
               +" mConnectionAcceptingThread:"+(mBluetoothAdapter != null));
+
+    // TODO amoghbl1: Doesn't seem to handle a case where we have a valid socket but a dead connectionAcceptingThread. Maybe handle that?
+
     if (mServerSocket == null         && mBluetoothAdapter != null &&
         mBluetoothAdapter.isEnabled() && (mConnectionAcceptingThread == null || !mConnectionAcceptingThread.isAlive())) {
       try { 
