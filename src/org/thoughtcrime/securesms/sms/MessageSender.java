@@ -19,7 +19,12 @@ package org.thoughtcrime.securesms.sms;
 import android.content.Context;
 import android.util.Log;
 import android.util.Pair;
+import android.widget.Toast;
 
+import org.denovogroup.murmur.backend.ExchangeHistoryTracker;
+import org.denovogroup.murmur.backend.MessageStore;
+import org.denovogroup.murmur.backend.SecurityManager;
+import org.denovogroup.murmur.backend.SecurityProfile;
 import org.thoughtcrime.securesms.ApplicationContext;
 import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.crypto.MasterSecretUnion;
@@ -53,6 +58,8 @@ import org.whispersystems.signalservice.api.push.ContactTokenDetails;
 import org.whispersystems.signalservice.api.util.InvalidNumberException;
 
 import java.io.IOException;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import org.thoughtcrime.securesms.mms.MmsException;
 
@@ -85,7 +92,7 @@ public class MessageSender {
     // Marking message as sent, but well, who knows :P
     database.markAsSent(messageId, true);
 
-    sendHerd(context, recipients, message, messageId);
+    sendHerdMessage(context, recipients, message, messageId);
 
     return allocatedThreadId;
   }
@@ -235,7 +242,7 @@ public class MessageSender {
     }
   }
 
-  private static void sendHerd(Context context, Recipients recipients, OutgoingTextMessage message, long messageId) {
+  private static void sendHerdMessage(Context context, Recipients recipients, OutgoingTextMessage message, long messageId) {
     JobManager jobManager = ApplicationContext.getInstance(context).getJobManager();
     jobManager.add(new SendHerdMessageJob(context, recipients.getPrimaryRecipient().getNumber(), message, SendHerdMessageJob.TYPE_MESSAGE, messageId));
   }

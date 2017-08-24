@@ -16,23 +16,39 @@
  */
 package org.thoughtcrime.securesms;
 
+import android.bluetooth.BluetoothAdapter;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.ContentObserver;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.SearchView;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import org.denovogroup.murmur.backend.AppConstants;
+import org.denovogroup.murmur.backend.MurmurService;
+import org.denovogroup.murmur.backend.SecurityManager;
 import org.thoughtcrime.securesms.components.RatingManager;
 import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
@@ -72,6 +88,7 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     fragment = initFragment(android.R.id.content, new ConversationListFragment(), masterSecret, dynamicLanguage.getCurrentLocale());
 
     initializeContactUpdatesReceiver();
+    initialiseMurmurService();
 
     RatingManager.showRatingDialogIfNecessary(this);
   }
@@ -148,6 +165,7 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     super.onOptionsItemSelected(item);
 
     switch (item.getItemId()) {
+    case R.id.menu_murmur_toggle:     toggleMurmurState();     return true;
     case R.id.menu_new_group:         createGroup();           return true;
     case R.id.menu_settings:          handleDisplaySettings(); return true;
     case R.id.menu_clear_passphrase:  handleClearPassphrase(); return true;
@@ -219,6 +237,95 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
       startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://support.whispersystems.org")));
     } catch (ActivityNotFoundException e) {
       Toast.makeText(this, R.string.ConversationListActivity_there_is_no_browser_installed_on_your_device, Toast.LENGTH_LONG).show();
+    }
+  }
+
+  private void toggleMurmurState() {
+    Boolean flag = false;
+    SharedPreferences sharedPreferences = getSharedPreferences(AppConstants.PREF_FILE, MODE_PRIVATE);
+    if(!sharedPreferences.getBoolean(AppConstants.IS_APP_ENABLED, false)){
+      flag = true;
+    }
+    Log.d(TAG, "Setting state to: " + flag);
+    sharedPreferences.edit().putBoolean(AppConstants.IS_APP_ENABLED, flag).commit();
+  }
+
+  private void initialiseMurmurService() {
+    //start Murmur service if necessary
+    SharedPreferences sharedPreferences = getSharedPreferences(AppConstants.PREF_FILE, MODE_PRIVATE);
+    if (sharedPreferences.getBoolean(AppConstants.IS_APP_ENABLED, true)) {
+      if(Build.VERSION.SDK_INT >= 23 && SecurityManager.getStoredMAC(this).length() == 0){
+        //need to request MAC from user first
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setTitle(R.string.onboarding4_title);
+        dialog.setMessage(R.string.onboarding4_message);
+        final ViewGroup contentView = (ViewGroup) LayoutInflater.from(this).inflate(R.layout.request_mac_dialog, null, false);
+        dialog.setView(contentView);
+        dialog.setCancelable(false);
+        dialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            SecurityManager.setStoredMAC(ConversationListActivity.this, ((EditText) contentView.findViewById(R.id.mac_input)).getText().toString());
+            dialog.dismiss();
+
+            Intent startServiceIntent = new Intent(ConversationListActivity.this, MurmurService.class);
+            startService(startServiceIntent);
+          }
+        });
+        dialog.setNeutralButton(R.string.settings_bt_device_settings, new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+          }
+        });
+        final AlertDialog alertdialog = dialog.create();
+        alertdialog.show();
+
+        alertdialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener() {
+          @Override
+          public void onClick(View v) {
+            final Intent i = new Intent();
+            i.setAction(Intent.ACTION_MAIN);
+            i.setComponent(new ComponentName("com.android.settings", "com.android.settings.deviceinfo.Status"));
+            startActivity(i);
+          }
+        });
+
+        alertdialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+
+        TextWatcher watcher = new TextWatcher() {
+          @Override
+          public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+          }
+
+          @Override
+          public void onTextChanged(CharSequence s, int start, int before, int count) {
+            alertdialog.getButton(DialogInterface.BUTTON_POSITIVE)
+                    .setEnabled(BluetoothAdapter.checkBluetoothAddress(s.toString().toUpperCase()));
+          }
+
+          @Override
+          public void afterTextChanged(Editable s) {
+
+          }
+        };
+
+        ((EditText) contentView.findViewById(R.id.mac_input)).addTextChangedListener(watcher);
+        contentView.findViewById(R.id.why_mac).setOnClickListener(new View.OnClickListener() {
+          @Override
+          public void onClick(View v) {
+            ((TextView) v).setText(R.string.onboarding4_message_small);
+            v.setOnClickListener(null);
+          }
+        });
+
+      } else {
+        Intent startServiceIntent = new Intent(this, MurmurService.class);
+        startService(startServiceIntent);
+      }
+    } else {
+      // TODO: amoghbl1, once we start to handle offline and online modes for our Signal.
+      //Toast.makeText(this, R.string.offline_mode_toast, Toast.LENGTH_LONG).show();
     }
   }
 

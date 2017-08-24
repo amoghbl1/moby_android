@@ -1427,7 +1427,13 @@
     <string name="notification_no_wifi_message">Please turn on WiFi or switch to Offline mode</string>
     <string name="notification_connection_error_title">Connection Error</string>
     <string name="notification_connection_error_message">Turn on BT/WiFi or switch to Offline</string>
-
+    <string name="settings_bt_device_settings">Go to Status Screen</string>
+    <string name="onboarding4_title">Just one more thing</string>
+    <string name="onboarding4_message"><![CDATA[Please turn on Bluetooth, go to your Status screen, and copy & paste your Bluetooth address below:]]></string>
+    <string name="onboarding4_message_small_why">Why are we asking for this?</string>
+    <string name="onboarding4_message_small">Murmur uses Bluetooth to communicate. Unfortunately Android 6.x applications cannot get automatic access to your Bluetooth address, so we need your help. Don\'t worry - you will only have to enter this once. If you made a mistake entering the address you can correct it later on in Settings</string>
+    <string name="onboarding4_message_error">Invalid Bluetooth address</string>
+    <string name="murmur_offline_online">Toggle Murmur State</string>
     <!-- EOF -->
 
 </resources>

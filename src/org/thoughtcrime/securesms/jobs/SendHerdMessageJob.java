@@ -2,12 +2,18 @@ package org.thoughtcrime.securesms.jobs;
 
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
+import org.denovogroup.murmur.backend.Crypto;
+import org.denovogroup.murmur.backend.ExchangeHistoryTracker;
+import org.denovogroup.murmur.backend.MessageStore;
+import org.denovogroup.murmur.backend.SecurityProfile;
 import org.thoughtcrime.securesms.ApplicationContext;
 import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.database.TextSecureDirectory;
 import org.thoughtcrime.securesms.dependencies.InjectableType;
 import org.denovogroup.murmur.backend.FriendStore;
+import org.denovogroup.murmur.backend.SecurityManager;
 import org.denovogroup.murmur.backend.StorageBase;
 import org.denovogroup.murmur.objects.HerdProtos;
 import org.thoughtcrime.securesms.sms.OutgoingTextMessage;
@@ -26,6 +32,8 @@ import org.whispersystems.signalservice.api.push.exceptions.UnregisteredUserExce
 import org.whispersystems.signalservice.api.util.InvalidNumberException;
 
 import java.io.IOException;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
@@ -51,6 +59,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     private HerdProtos.HandshakeMessage herdHandshakeMessage;
     private int messageType;
     private long messageID;
+    private OutgoingTextMessage message;
 
     private String destination = null;
 
@@ -59,6 +68,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
         this.messageID = messageID;
         this.destination = destination;
         this.messageType = messageType;
+        this.message = message;
     }
 
     public SendHerdMessageJob(Context context, String destination, int messageType) {
@@ -101,7 +111,29 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     public void onPushSend(MasterSecret masterSecret) {
         if (this.messageType == this.TYPE_MESSAGE) {
             Log.d(TAG, "Trying to send a local herd message!!");
+            MessageStore messageStore = MessageStore.getInstance(context);
+            float trust = 1.0f;
+            int priority = 0;
+            SecurityProfile currentProfile = org.denovogroup.murmur.backend.SecurityManager.getCurrentProfile(context);
+            String pseudonym = currentProfile.isPseudonyms() ?
+                    SecurityManager.getCurrentPseudonym(context) : "";
+            long timestamp = System.currentTimeMillis();
 
+            Random random = new Random();
+            long idLong = System.nanoTime() * (1 + random.nextInt());
+            String messageIdStr = "" + messageID;
+            // String messageId = Base64.encodeToString(Crypto.encodeString(String.valueOf(idLong)), Base64.NO_WRAP);
+
+            String messageParent = null;
+            int restrictedHops = 0;
+
+            messageStore.addMessage(context, messageIdStr,
+                    this.message.getMessageBody(), trust, priority,
+                    pseudonym, timestamp, true,
+                    TimeUnit.HOURS.toMillis(-1), null,
+                    messageParent, true, restrictedHops, 0, null, messageParent);
+            ExchangeHistoryTracker.getInstance(context).cleanHistory(null);
+            MessageStore.getInstance(context).updateStoreVersion();
         } else {
             try {
                 Thread.sleep(calculateSleep());
