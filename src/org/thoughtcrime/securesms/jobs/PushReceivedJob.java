@@ -56,12 +56,6 @@ public abstract class PushReceivedJob extends ContextJob {
 
     FriendStore friendStore = FriendStore.getInstance(context);
 
-    /*
-    jobManager.add(new DeliveryReceiptJob(context, envelope.getSource(),
-            envelope.getTimestamp(),
-            envelope.getRelay()));
-    */
-
     if (!recipients.isBlocked()) {
       long messageId = DatabaseFactory.getPushDatabase(context).insert(envelope);
       jobManager.add(new PushDecryptJob(context, messageId, envelope.getSource()));
