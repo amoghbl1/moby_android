@@ -498,9 +498,10 @@ public class MessageStore extends SQLiteOpenHelper {
 
             if(message.length() > MAX_MESSAGE_SIZE) message = message.substring(0, MAX_MESSAGE_SIZE);
 
-            Calendar tempCal = Calendar.getInstance();
-            tempCal.setTimeInMillis(timestamp);
-            Calendar reducedTimestamp = Utils.reduceCalendarMin(tempCal);
+            // amoghbl1: Not using the reduced timestamp.
+            // Calendar tempCal = Calendar.getInstance();
+            // tempCal.setTimeInMillis(timestamp);
+            // Calendar reducedTimestamp = Utils.reduceCalendarMin(tempCal);
 
             if(containsOrRemoved(message)) {
                 db.execSQL("UPDATE "+TABLE+" SET "
@@ -512,7 +513,7 @@ public class MessageStore extends SQLiteOpenHelper {
                         +COL_PARENT+"='"+parent+"',"
                         + COL_READ +"="+(isRead ? TRUE : FALSE)+","
                         + ((location != null) ? (COL_LATLONG+"='"+location.getLatitude()+" "+location.getLongitude()+"',") : "")
-                        +COL_TIMESTAMP+"="+reducedTimestamp.getTimeInMillis()+","
+                        +COL_TIMESTAMP+"="+timestamp+","
                         + ((exchange != null) ? (COL_EXCHANGE+"="+exchange+",") : "")
                         +COL_EXPIRE+"="+timebound
                         +" WHERE " + COL_MESSAGE + "='" + message + "';");
@@ -526,7 +527,7 @@ public class MessageStore extends SQLiteOpenHelper {
                 if(location != null) content.put(COL_LATLONG, location.getLatitude()+" "+location.getLongitude());
                 content.put(COL_PSEUDONYM, pseudonym);
                 content.put(COL_EXPIRE, timebound);
-                content.put(COL_TIMESTAMP, reducedTimestamp.getTimeInMillis());
+                content.put(COL_TIMESTAMP, timestamp);
                 content.put(COL_BIGPARENT, bigparent);
                 content.put(COL_PARENT, parent);
                 content.put(COL_READ, isRead ? TRUE : FALSE);

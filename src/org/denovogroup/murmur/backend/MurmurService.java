@@ -46,9 +46,23 @@ import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
+import android.telephony.PhoneNumberUtils;
+import android.telephony.SmsMessage;
+
+import com.klinker.android.send_message.*;
 
 import org.denovogroup.murmur.objects.MurmurMessage;
+import org.thoughtcrime.securesms.crypto.MasterSecret;
+import org.thoughtcrime.securesms.crypto.MasterSecretUnion;
+import org.thoughtcrime.securesms.crypto.MasterSecretUtil;
+import org.thoughtcrime.securesms.database.DatabaseFactory;
+import org.thoughtcrime.securesms.database.EncryptingSmsDatabase;
+import org.thoughtcrime.securesms.service.KeyCachingService;
+import org.thoughtcrime.securesms.sms.IncomingTextMessage;
+import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.whispersystems.libsignal.logging.Log;
+import org.whispersystems.libsignal.util.guava.Optional;
+import org.whispersystems.signalservice.api.messages.SignalServiceGroup;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -548,14 +562,38 @@ public class MurmurService extends Service {
     /* package */ ExchangeCallback mExchangeCallback = new ExchangeCallback() {
       @Override
       public void success(Exchange exchange) {
-          ServiceWatchDog.getInstance().notifyLastExchange();
-          boolean hasNew = false;
+        Context context = getApplicationContext();
+        ServiceWatchDog.getInstance().notifyLastExchange();
+        boolean hasNew = false;
         List<MurmurMessage> newMessages = exchange.getReceivedMessages();
         int friendOverlap = exchange.getCommonFriends();
+
+        MasterSecret masterSecret = KeyCachingService.getMasterSecret(context);
+        MasterSecretUnion masterSecretUnion;
+
+        if (masterSecret == null) {
+            masterSecretUnion = new MasterSecretUnion(MasterSecretUtil.getAsymmetricMasterSecret(context, null));
+        } else {
+            masterSecretUnion = new MasterSecretUnion(masterSecret);
+        }
+        // Handling received Messages.
+
+        for (MurmurMessage m : newMessages) {
+            Log.d(TAG, "My number:" + TextSecurePreferences.getLocalNumber(context));
+            if(m.messageid.equals(TextSecurePreferences.getLocalNumber(context).replaceAll("\\s", ""))) {
+                Log.d(TAG,  "Message for us!: " + m.text);
+                Optional<SignalServiceGroup> signalServiceGroupOptional = Optional.absent();
+                IncomingTextMessage incomingTextMessage = new IncomingTextMessage(m.pseudonym, 0, m.timestamp, m.text, signalServiceGroupOptional, 0);
+                EncryptingSmsDatabase database = DatabaseFactory.getEncryptingSmsDatabase(getApplicationContext());
+                database.insertMessageInbox(masterSecretUnion, incomingTextMessage);
+            }
+        }
+
         Log.i(TAG, "Got " + newMessages.size() + " messages in exchangeCallback");
         Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
           Set<String> myFriends = mFriendStore.getAllFriends();
         for (MurmurMessage message : newMessages) {
+            Log.d(TAG, "Message: text: " + message.text + ", " + message.messageid );
           double stored = mMessageStore.getTrust(message.text);
           double remote = message.trust;
           double newTrust = Exchange.newPriority(remote, stored, friendOverlap, myFriends.size());
