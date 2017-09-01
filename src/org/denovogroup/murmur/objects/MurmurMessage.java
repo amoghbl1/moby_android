@@ -50,7 +50,7 @@ public final class MurmurMessage extends Message {
   public static final Double DEFAULT_TRUST = 0.01D;
     public static final int DEFAULT_PRIORITY = 0;
     public static final String DEFAULT_PSEUDONYM = "";
-
+    public static final String TIMESTAMP_KEY = "timestamp";
     public static final String MESSAGE_ID_KEY = "messageId";
     public static final String TEXT_KEY = "text";
     public static final String TRUST_KEY = "trust";
@@ -172,16 +172,13 @@ public final class MurmurMessage extends Message {
 
         SecurityProfile securityProfile = SecurityManager.getCurrentProfile(context);
 
-        Calendar currentTime = Utils.reduceCalendarMin(Calendar.getInstance());
-
         return new MurmurMessage(
                 json.optString(MESSAGE_ID_KEY, DEFAULT_TEXT),
                 json.optString(TEXT_KEY, DEFAULT_TEXT),
                 json.optDouble(TRUST_KEY,DEFAULT_TRUST),
                 json.optInt(PRIORITY_KEY, DEFAULT_PRIORITY),
                 json.optString(PSEUDONYM_KEY, DEFAULT_PSEUDONYM),
-                securityProfile.isTimestamp() ?
-                        currentTime.getTimeInMillis() : 0L,
+                json.optLong(TIMESTAMP_KEY, -1L),
                 securityProfile.isShareLocation() ?
                         json.optString(LATLONG_KEY, null) : null,
                 json.optLong(TIMEBOUND_KEY, -1L),
@@ -212,6 +209,7 @@ public final class MurmurMessage extends Message {
             result.put(PRIORITY_KEY, this.priority);
             result.put(HOP_KEY, this.hop + 1);
             result.put(MIN_USERS_P_HOP_KEY, this.contacts_hop);
+            result.put(TIMESTAMP_KEY, this.timestamp);
             if(parent != null) result.put(PARENT_KEY, this.parent);
             if(bigparent != null) result.put(BIGPARENT_KEY, this.bigparent);
             if(timebound > 0) result.put(TIMEBOUND_KEY, this.timebound);
