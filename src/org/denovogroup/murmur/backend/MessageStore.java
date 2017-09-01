@@ -584,8 +584,8 @@ public class MessageStore extends SQLiteOpenHelper {
     public void deleteAllMessages() {
         SQLiteDatabase db = getWritableDatabase();
         if (db != null ) {
-            db.execSQL("DELETE * FROM " + TABLE );
-            Log.d(TAG, "All messages deleted from store. Count: " + getMessageCount(true, true));
+            int numberDeleted = db.delete(TABLE, null, null);
+            Log.d(TAG, "All messages deleted from store. Deleted row(s): " + numberDeleted);
             return;
         }
         Log.d(TAG, "Delete all called on a null database.");
