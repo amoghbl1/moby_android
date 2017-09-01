@@ -128,8 +128,10 @@ public class ConversationListItem extends RelativeLayout
 
 
     FriendStore friendStore = FriendStore.getInstance(getContext());
-    if(friendStore.hasFriend(this.recipients.getPrimaryRecipient().getNumber())) {
-      this.herdIndicator.setVisibility(VISIBLE);
+    if(this.recipients.getPrimaryRecipient() != null) {
+      if (friendStore.hasFriend(this.recipients.getPrimaryRecipient().getNumber())) {
+        this.herdIndicator.setVisibility(VISIBLE);
+      }
     }
 
     this.recipients.addListener(this);

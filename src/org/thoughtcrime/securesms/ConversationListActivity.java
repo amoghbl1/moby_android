@@ -47,6 +47,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.denovogroup.murmur.backend.AppConstants;
+import org.denovogroup.murmur.backend.MessageStore;
 import org.denovogroup.murmur.backend.MurmurService;
 import org.denovogroup.murmur.backend.SecurityManager;
 import org.thoughtcrime.securesms.components.RatingManager;
@@ -165,7 +166,7 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     super.onOptionsItemSelected(item);
 
     switch (item.getItemId()) {
-    case R.id.menu_murmur_toggle:     toggleMurmurState();     return true;
+    case R.id.menu_murmur_ms_delete:  deleteMessageStore();    return true;
     case R.id.menu_new_group:         createGroup();           return true;
     case R.id.menu_settings:          handleDisplaySettings(); return true;
     case R.id.menu_clear_passphrase:  handleClearPassphrase(); return true;
@@ -240,6 +241,11 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     }
   }
 
+  private void deleteMessageStore() {
+    MessageStore ms =  MessageStore.getInstance(getApplicationContext());
+    ms.deleteAllMessages();
+  }
+  
   private void toggleMurmurState() {
     Boolean flag = false;
     SharedPreferences sharedPreferences = getSharedPreferences(AppConstants.PREF_FILE, MODE_PRIVATE);

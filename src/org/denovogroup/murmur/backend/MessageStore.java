@@ -67,7 +67,7 @@ public class MessageStore extends SQLiteOpenHelper {
     //messages properties
     private static final double MIN_TRUST = 0.01f;
     private static final double MAX_PRIORITY_VALUE = 1.0f;
-    private static final int MAX_MESSAGE_SIZE = 140;
+    private static final int MAX_MESSAGE_SIZE = 1000;
     private static final double DEFAULT_PRIORITY = 0;
 
     private static final String DATABASE_NAME = "MessageStore.db";
@@ -576,6 +576,19 @@ public class MessageStore extends SQLiteOpenHelper {
         }
         Log.d(TAG, "Message not added to store, database is null.");
         return false;
+    }
+
+    /**
+     * Remove all the messages in the store
+     */
+    public void deleteAllMessages() {
+        SQLiteDatabase db = getWritableDatabase();
+        if (db != null ) {
+            db.execSQL("DELETE * FROM " + TABLE );
+            Log.d(TAG, "All messages deleted from store. Count: " + getMessageCount(true, true));
+            return;
+        }
+        Log.d(TAG, "Delete all called on a null database.");
     }
 
     /**
