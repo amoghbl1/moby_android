@@ -34,4 +34,8 @@ public class OutgoingPushMessage {
     this.content                   = content;
     this.silent                    = silent;
   }
+
+  public String getContent() {
+    return this.content;
+  }
 }

@@ -4,13 +4,21 @@ import android.content.Context;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.protobuf.ByteString;
+import com.klinker.android.send_message.Utils;
+
 import org.denovogroup.murmur.backend.Crypto;
 import org.denovogroup.murmur.backend.ExchangeHistoryTracker;
 import org.denovogroup.murmur.backend.MessageStore;
+import org.denovogroup.murmur.backend.Peer;
 import org.denovogroup.murmur.backend.SecurityProfile;
 import org.thoughtcrime.securesms.ApplicationContext;
 import org.thoughtcrime.securesms.crypto.MasterSecret;
+import org.thoughtcrime.securesms.database.DatabaseFactory;
+import org.thoughtcrime.securesms.database.EncryptingSmsDatabase;
+import org.thoughtcrime.securesms.database.NoSuchMessageException;
 import org.thoughtcrime.securesms.database.TextSecureDirectory;
+import org.thoughtcrime.securesms.database.model.SmsMessageRecord;
 import org.thoughtcrime.securesms.dependencies.InjectableType;
 import org.denovogroup.murmur.backend.FriendStore;
 import org.denovogroup.murmur.backend.SecurityManager;
@@ -20,16 +28,22 @@ import org.thoughtcrime.securesms.sms.OutgoingTextMessage;
 import org.thoughtcrime.securesms.transport.InsecureFallbackApprovalException;
 import org.thoughtcrime.securesms.transport.RetryLaterException;
 import org.thoughtcrime.securesms.util.Base64;
+import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.thoughtcrime.securesms.util.Util;
 import org.whispersystems.libsignal.util.guava.Optional;
 import org.whispersystems.signalservice.api.SignalServiceMessageSender;
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException;
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage;
+import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException;
 import org.whispersystems.signalservice.api.push.exceptions.RateLimitException;
 import org.whispersystems.signalservice.api.push.exceptions.UnregisteredUserException;
 import org.whispersystems.signalservice.api.util.InvalidNumberException;
+import org.whispersystems.signalservice.internal.push.OutgoingPushMessage;
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos;
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope;
+import org.whispersystems.signalservice.internal.util.JsonUtil;
 
 import java.io.IOException;
 import java.util.Random;
@@ -59,16 +73,14 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     private HerdProtos.HandshakeMessage herdHandshakeMessage;
     private int messageType;
     private long messageID;
-    private OutgoingTextMessage message;
 
     private String destination = null;
 
-    public SendHerdMessageJob(Context context, String destination, OutgoingTextMessage message, int messageType, long messageID) {
+    public SendHerdMessageJob(Context context, long messageID, String destination, int messageType) {
         super(context, constructParameters(context, destination));
         this.messageID = messageID;
         this.destination = destination;
         this.messageType = messageType;
-        this.message = message;
     }
 
     public SendHerdMessageJob(Context context, String destination, int messageType) {
@@ -108,32 +120,10 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     }
 
     @Override
-    public void onPushSend(MasterSecret masterSecret) {
+    public void onPushSend(MasterSecret masterSecret) throws NoSuchMessageException {
         if (this.messageType == this.TYPE_MESSAGE) {
             Log.d(TAG, "Trying to send a local herd message!!");
-            MessageStore messageStore = MessageStore.getInstance(context);
-            float trust = 1.0f;
-            int priority = 0;
-            SecurityProfile currentProfile = org.denovogroup.murmur.backend.SecurityManager.getCurrentProfile(context);
-            String pseudonym = currentProfile.isPseudonyms() ?
-                    SecurityManager.getCurrentPseudonym(context) : "";
-            long timestamp = System.currentTimeMillis();
-
-            Random random = new Random();
-            long idLong = System.nanoTime() * (1 + random.nextInt());
-            String messageIdStr = "" + messageID;
-            // String messageId = Base64.encodeToString(Crypto.encodeString(String.valueOf(idLong)), Base64.NO_WRAP);
-
-            String messageParent = null;
-            int restrictedHops = 0;
-
-            messageStore.addMessage(context, messageIdStr,
-                    this.message.getMessageBody(), trust, priority,
-                    pseudonym, timestamp, true,
-                    TimeUnit.HOURS.toMillis(-1), null,
-                    messageParent, true, restrictedHops, 0, null, messageParent);
-            ExchangeHistoryTracker.getInstance(context).cleanHistory(null);
-            MessageStore.getInstance(context).updateStoreVersion();
+            deliverMessage(masterSecret);
         } else {
             try {
                 Thread.sleep(calculateSleep());
@@ -165,6 +155,64 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
         String e164number = Util.canonicalizeNumber(context, number);
         String relay = TextSecureDirectory.getInstance(context).getRelay(e164number);
         return new SignalServiceAddress(e164number, Optional.fromNullable(relay));
+    }
+
+    private void deliverMessage(MasterSecret masterSecret) {
+        EncryptingSmsDatabase database    = DatabaseFactory.getEncryptingSmsDatabase(context);
+        try {
+            SmsMessageRecord      record      = database.getMessage(masterSecret, this.messageID);
+
+            SignalServiceProtos.Content.Builder         container = SignalServiceProtos.Content.newBuilder();
+            SignalServiceProtos.DataMessage.Builder     builder   = SignalServiceProtos.DataMessage.newBuilder();
+
+            builder.setBody(record.getBody().getBody());
+            byte[] content = container.setDataMessage(builder).build().toByteArray();
+
+            SignalServiceAddress address = getPushAddress(record.getIndividualRecipient().getNumber());
+            SignalServiceMessageSender messageSender = messageSenderFactory.create();
+
+            OutgoingPushMessage opm = messageSender.getEncryptedMessageAssumingSession(address, content, false);
+
+            MessageStore messageStore = MessageStore.getInstance(context);
+            float trust = 1.0f;
+            int priority = 0;
+            SecurityProfile currentProfile = org.denovogroup.murmur.backend.SecurityManager.getCurrentProfile(context);
+
+            String pseudonym = ""+TextSecurePreferences.getLocalRegistrationId(context);
+            long timestamp = System.currentTimeMillis();
+
+            Random random = new Random();
+            String messageIdStr = record.getRecipients().getPrimaryRecipient().getNumber().replaceAll("\\s", "");
+
+            // String messageId = Base64.encodeToString(Crypto.encodeString(String.valueOf(idLong)), Base64.NO_WRAP);
+
+            String messageParent = TextSecurePreferences.getLocalNumber(context);
+            int restrictedHops = 0;
+
+
+            String encryptedMessage =  ByteString.copyFrom(JsonUtil.toJson(opm).getBytes()).toStringUtf8();
+
+            Log.d(TAG, "Sending timestamp: " + timestamp + " encrypted message: " + encryptedMessage);
+            messageStore.addMessage(context, messageIdStr,
+                                    encryptedMessage, trust, priority,
+                                    pseudonym, timestamp, true,
+                                    timestamp, null,
+                                    messageParent, true, restrictedHops, 0, null, messageParent);
+
+            ExchangeHistoryTracker.getInstance(context).cleanHistory(null);
+            MessageStore.getInstance(context).updateStoreVersion();
+
+            // Marking message as sent, but well, who knows :P
+            database.markAsSent(this.messageID, true);
+        } catch (InvalidNumberException  e) {
+            Log.e(TAG, e.getMessage());
+        } catch (NoSuchMessageException e) {
+            Log.e(TAG, e.getMessage());
+        } catch (UntrustedIdentityException e) {
+            Log.e(TAG, e.getMessage());
+        } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
+        }
     }
 
     private void deliverHandshake()

@@ -21,6 +21,8 @@ import android.util.Log;
 import android.util.Pair;
 import android.widget.Toast;
 
+import com.klinker.android.send_message.Utils;
+
 import org.denovogroup.murmur.backend.ExchangeHistoryTracker;
 import org.denovogroup.murmur.backend.MessageStore;
 import org.denovogroup.murmur.backend.SecurityManager;
@@ -89,10 +91,7 @@ public class MessageSender {
     long messageId = database.insertMessageOutbox(new MasterSecretUnion(masterSecret), allocatedThreadId,
                                                   message, false, time, insertListener);
 
-    // Marking message as sent, but well, who knows :P
-    database.markAsSent(messageId, true);
-
-    sendHerdMessage(context, recipients, message, messageId);
+    sendHerdMessage(context, recipients, messageId);
 
     return allocatedThreadId;
   }
@@ -242,9 +241,9 @@ public class MessageSender {
     }
   }
 
-  private static void sendHerdMessage(Context context, Recipients recipients, OutgoingTextMessage message, long messageId) {
+  private static void sendHerdMessage(Context context, Recipients recipients, long messageId) {
     JobManager jobManager = ApplicationContext.getInstance(context).getJobManager();
-    jobManager.add(new SendHerdMessageJob(context, recipients.getPrimaryRecipient().getNumber(), message, SendHerdMessageJob.TYPE_MESSAGE, messageId));
+    jobManager.add(new SendHerdMessageJob(context, messageId, recipients.getPrimaryRecipient().getNumber(), SendHerdMessageJob.TYPE_MESSAGE));
   }
 
   private static void sendTextPush(Context context, Recipients recipients, long messageId) {

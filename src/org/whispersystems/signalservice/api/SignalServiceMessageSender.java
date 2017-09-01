@@ -675,6 +675,7 @@ public class SignalServiceMessageSender {
   private OutgoingPushMessage getEncryptedMessage(PushServiceSocket socket, SignalServiceAddress recipient, int deviceId, byte[] plaintext, boolean silent)
       throws IOException, UntrustedIdentityException
   {
+    Log.d(TAG, "getEncryptedMessage for: " + recipient.getNumber() + " deviceId " + deviceId);
     SignalProtocolAddress signalProtocolAddress = new SignalProtocolAddress(recipient.getNumber(), deviceId);
     SignalServiceCipher   cipher                = new SignalServiceCipher(localAddress, store);
 
@@ -708,6 +709,19 @@ public class SignalServiceMessageSender {
   }
 
 
+  public OutgoingPushMessage getEncryptedMessageAssumingSession(SignalServiceAddress recipient, byte[] plaintext, boolean silent)
+          throws IOException, UntrustedIdentityException
+  {
+    Log.d(TAG, "getEncryptedMessageAssumingSession for: " + recipient.getNumber() + " deviceId " + SignalServiceAddress.DEFAULT_DEVICE_ID);
+    SignalProtocolAddress signalProtocolAddress = new SignalProtocolAddress(recipient.getNumber(), SignalServiceAddress.DEFAULT_DEVICE_ID);
+    SignalServiceCipher   cipher                = new SignalServiceCipher(localAddress, store);
+
+    try {
+      return cipher.encrypt(signalProtocolAddress, plaintext, silent);
+    } catch (org.whispersystems.libsignal.UntrustedIdentityException e) {
+      throw new UntrustedIdentityException("Untrusted on send", recipient.getNumber(), e.getUntrustedIdentity());
+    }
+  }
 
   private void handleMismatchedDevices(PushServiceSocket socket, SignalServiceAddress recipient,
                                        MismatchedDevices mismatchedDevices)
