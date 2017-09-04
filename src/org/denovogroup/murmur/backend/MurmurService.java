@@ -46,46 +46,13 @@ import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
-import android.telephony.PhoneNumberUtils;
-import android.telephony.SmsMessage;
 import android.util.Log;
 
-import com.google.protobuf.ByteString;
-import com.klinker.android.send_message.*;
-
-import org.denovogroup.murmur.objects.MurmurMessage;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.thoughtcrime.securesms.ApplicationContext;
-import org.thoughtcrime.securesms.crypto.MasterSecret;
-import org.thoughtcrime.securesms.crypto.MasterSecretUnion;
-import org.thoughtcrime.securesms.crypto.MasterSecretUtil;
-import org.thoughtcrime.securesms.crypto.storage.SignalProtocolStoreImpl;
-import org.thoughtcrime.securesms.database.DatabaseFactory;
-import org.thoughtcrime.securesms.database.EncryptingSmsDatabase;
-import org.thoughtcrime.securesms.database.MessagingDatabase;
+import org.denovogroup.murmur.objects.MobyMessage;
 import org.thoughtcrime.securesms.jobs.PushContentReceiveJob;
-import org.thoughtcrime.securesms.jobs.PushDecryptJob;
-import org.thoughtcrime.securesms.notifications.MessageNotifier;
-import org.thoughtcrime.securesms.recipients.RecipientFactory;
-import org.thoughtcrime.securesms.recipients.Recipients;
-import org.thoughtcrime.securesms.service.KeyCachingService;
-import org.thoughtcrime.securesms.service.MessageRetrievalService;
-import org.thoughtcrime.securesms.sms.IncomingEncryptedMessage;
-import org.thoughtcrime.securesms.sms.IncomingTextMessage;
 import org.thoughtcrime.securesms.util.Base64;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
-import org.whispersystems.jobqueue.JobManager;
-import org.whispersystems.libsignal.InvalidVersionException;
-import org.whispersystems.libsignal.LegacyMessageException;
-import org.whispersystems.libsignal.SessionCipher;
-import org.whispersystems.libsignal.SignalProtocolAddress;
-import org.whispersystems.libsignal.protocol.SignalMessage;
-import org.whispersystems.libsignal.state.SignalProtocolStore;
-import org.whispersystems.libsignal.util.guava.Optional;
-import org.whispersystems.signalservice.api.crypto.SignalServiceCipher;
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope;
-import org.whispersystems.signalservice.api.messages.SignalServiceGroup;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos;
 
@@ -631,32 +598,27 @@ public class MurmurService extends Service {
      */
     /* package */ ExchangeCallback mExchangeCallback = new ExchangeCallback() {
 
-        private void handleMessage(MurmurMessage m) {
-            Log.d(TAG, "Message for us!: " + m.text + "from " + m.messageid);
+        private void handleMessage(MobyMessage m) {
+            Log.d(TAG, "Message for us from: " + m.getSource());
+            // TODO amoghbl1: Figure out if we need to decrypt inside a Job or not.
+            String encodedMessage = m.getPayload();
+            Log.d(TAG, "My encodedMessage: " + encodedMessage);
+            byte[] decodedContent = null;
             try {
-                // TODO amoghbl1: Figure out if we need to decrypt inside a Job or not.
-                JSONObject obj = new JSONObject(m.text);
-                String encodedMessage = obj.getString("content");
-                Log.d(TAG, "My encodedMessage: " + encodedMessage);
-                byte[] decodedContent = null;
-                try {
-                    decodedContent = Base64.decode(encodedMessage);
-                } catch (IOException e) {
+                decodedContent = Base64.decode(encodedMessage);
+            } catch (IOException e) {
 
-                }
-                Log.d(TAG, "My byte string: " + new String(decodedContent));
-
-                // NOTE: This is going to break for multi device encryption :)
-                SignalServiceEnvelope envelope = new SignalServiceEnvelope(SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE, m.parent,
-                        SignalServiceAddress.DEFAULT_DEVICE_ID, "",
-                        m.timestamp, null,
-                        decodedContent);
-
-                PushContentReceiveJob receiveJob = new PushContentReceiveJob(MurmurService.this);
-                receiveJob.handle(envelope, false);
-            } catch (JSONException e) {
-                Log.e(TAG, e.getMessage());
             }
+            Log.d(TAG, "My byte string: " + new String(decodedContent));
+
+            // NOTE: This is going to break for multi device encryption :)
+            SignalServiceEnvelope envelope = new SignalServiceEnvelope(SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE, m.getSource(),
+                    SignalServiceAddress.DEFAULT_DEVICE_ID, "",
+                    m.getTimestamp(), null,
+                    decodedContent);
+
+            PushContentReceiveJob receiveJob = new PushContentReceiveJob(MurmurService.this);
+            receiveJob.handle(envelope, false);
         }
 
         @Override
@@ -664,7 +626,7 @@ public class MurmurService extends Service {
             Context context = getApplicationContext();
             ServiceWatchDog.getInstance().notifyLastExchange();
             boolean hasNew = false;
-            List<MurmurMessage> newMessages = exchange.getReceivedMessages();
+            List<MobyMessage> newMessages = exchange.getReceivedMessages();
             int friendOverlap = exchange.getCommonFriends();
 
 
@@ -672,34 +634,23 @@ public class MurmurService extends Service {
             Log.i(TAG, "Got " + newMessages.size() + " messages in exchangeCallback");
             Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
             Set<String> myFriends = mFriendStore.getAllFriends();
-            for (MurmurMessage message : newMessages) {
-                double stored = mMessageStore.getTrust(message.text);
-                double remote = message.trust;
-                double newTrust = Exchange.newPriority(remote, stored, friendOverlap, myFriends.size());
-                try {
-                    if (mMessageStore.containsOrRemoved(message.text)) {
-                        //update existing message priority unless its marked as removed by user
-                        mMessageStore.updateMessage(message.text, newTrust, true);
-                    } else {
-                        hasNew = true;
-                        /**
-                         * TODO amoghbl1:
-                         * Check if the message is for us, we would need to replace this with the tag that
-                         * we decide in the paper.
-                         */
-                        if (message.messageid.equals(TextSecurePreferences.getLocalNumber(context).replaceAll("\\s", "")))
-                            handleMessage(message);
+            for (MobyMessage message : newMessages) {
+                if (mMessageStore.containsOrRemoved(message.getPayload())) {
+                    //update existing message priority unless its marked as removed by user
+                    // TODO amoghbl1: Figure out what to do in this case.
+                } else {
+                    hasNew = true;
+                    /**
+                     * TODO amoghbl1:
+                     * Check if the message is for us, we would need to replace this with the tag that
+                     * we decide in the paper.
+                     */
+                    if (message.getDestination().equals(TextSecurePreferences.getLocalNumber(context).replaceAll("\\s", "")))
+                        handleMessage(message);
 
-                        mMessageStore.addMessage(MurmurService.this, message.messageid, message.text, newTrust, message.priority, message.pseudonym, message.timestamp, true, message.timebound, message.getLocation(), message.parent, false, message.contacts_hop, message.hop, exchange.toString(), message.bigparent);
-                        //mark this message as unread
-                        mMessageStore.setRead(message.text, false);
-                    }
-                } catch (IllegalArgumentException e) {
-                    Log.e(TAG, String.format("Attempted to add/update message %s with trust (%f/%f)" +
-                                    ", %d friends, %d friends in common",
-                            message.text, newTrust, message.priority,
-                            myFriends.size(), friendOverlap));
+                    mMessageStore.addMessage(message);
                 }
+
             }
 
             if (hasNew) {
@@ -743,32 +694,21 @@ public class MurmurService extends Service {
             ServiceWatchDog.getInstance().notifyLastExchange();
             Log.e(TAG, "Exchange failed but data can be recovered, reason: " + reason);
             boolean hasNew = false;
-            List<MurmurMessage> newMessages = exchange.getReceivedMessages();
+            List<MobyMessage> newMessages = exchange.getReceivedMessages();
             int friendOverlap = Math.max(exchange.getCommonFriends(), 0);
             Log.i(TAG, "Got " + newMessages.size() + " messages in exchangeCallback");
             Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
             if (newMessages != null) {
-                for (MurmurMessage message : newMessages) {
+                for (MobyMessage message : newMessages) {
                     Set<String> myFriends = mFriendStore.getAllFriends();
-                    double stored = mMessageStore.getTrust(message.text);
-                    double remote = message.priority;
-                    double newTrust = Exchange.newPriority(remote, stored, friendOverlap, myFriends.size());
-                    try {
-                        if (mMessageStore.containsOrRemoved(message.text)) {
-                            //update existing message priority unless its marked as removed by user
-                            mMessageStore.updateMessage(message.text, newTrust, true);
-                        } else {
-                            hasNew = true;
-                            mMessageStore.addMessage(MurmurService.this, message.messageid, message.text, newTrust, message.priority, message.pseudonym, message.timestamp, true, message.timebound, message.getLocation(), message.parent, false, message.contacts_hop, message.hop, exchange.toString(), message.bigparent);
-                            //mark this message as unread
-                            mMessageStore.setRead(message.text, false);
-                        }
-                    } catch (IllegalArgumentException e) {
-                        Log.e(TAG, String.format("Attempted to add/update message %s with trust (%f/%f)" +
-                                        ", %d friends, %d friends in common",
-                                message.text, newTrust, message.priority,
-                                myFriends.size(), friendOverlap), e);
+                    if (mMessageStore.containsOrRemoved(message.getPayload())) {
+                        //update existing message priority unless its marked as removed by user
+                        // TODO amoghbl1: figure out what to do in this case
+                    } else {
+                        hasNew = true;
+                        mMessageStore.addMessage(message);
                     }
+
                 }
             }
 
@@ -874,50 +814,6 @@ public class MurmurService extends Service {
         return null;
     }
 
-    /** This method check how many unread messages there are and display a notification
-     * visible from the recent task pull down menu. this method should be called only
-     * be called when the app itself is either closed or in the background.
-
-     private void showUnreadMessagesNotification() {
-     Intent intent = new Intent(this, MainActivity.class);
-     PendingIntent pendingIntent = PendingIntent.getActivity(this , 0, intent,PendingIntent.FLAG_CANCEL_CURRENT);
-
-     Notification.Builder builder = new Notification.Builder(getApplicationContext());
-     builder.setContentIntent(pendingIntent);
-     builder.setContentTitle(getString(R.string.unread_notification_title) + " (" + MessageStore.getInstance(this).getUnreadCount() + ")");
-     builder.setContentText(getString(R.string.unread_notification_content) + " (" + ExchangeHistoryTracker.getInstance().getExchangeHistory() + ")");
-
-     // create large icon
-     Resources res = this.getResources();
-     BitmapDrawable largeIconDrawable;
-     if(Build.VERSION.SDK_INT >= 21){
-     largeIconDrawable = (BitmapDrawable) res.getDrawable(R.mipmap.ic_launcher, null);
-     } else {
-     largeIconDrawable = (BitmapDrawable) res.getDrawable(R.mipmap.ic_launcher);
-     }
-     Bitmap largeIcon = largeIconDrawable.getBitmap();
-
-     int height = (int) res.getDimension(android.R.dimen.notification_large_icon_height);
-     int width = (int) res.getDimension(android.R.dimen.notification_large_icon_width);
-     largeIcon = Bitmap.createScaledBitmap(largeIcon, width, height, false);
-
-     builder.setLargeIcon(largeIcon);
-     builder.setAutoCancel(true);
-     builder.setTicker(getText(R.string.unread_notification_content));
-     builder.setSmallIcon(R.mipmap.ic_launcher_small);
-     builder.setDefaults(Notification.DEFAULT_SOUND);
-
-     NotificationManager nManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-     nManager.notify(NOTIFICATION_ID, builder.build());
-     }
-
-     public void cancelUnreadMessagesNotification(){
-     NotificationManager nManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-     nManager.cancel(NOTIFICATION_ID);
-     }
-
-     */
-
     /**
      * Check if the app have a living instance in the foreground
      *
@@ -966,7 +862,9 @@ public class MurmurService extends Service {
 
     private void cleanupMessageStore() {
         SecurityProfile currentProfile = SecurityManager.getCurrentProfile(this);
-        MessageStore.getInstance(this).deleteOutdatedOrIrrelevant(currentProfile);
+
+        // TODO amoghbl1: Write something to drop messages here.
+        // MessageStore.getInstance(this).deleteOutdatedOrIrrelevant(currentProfile);
     }
 
     private Peer pickBestPeer(List<Peer> peers) {

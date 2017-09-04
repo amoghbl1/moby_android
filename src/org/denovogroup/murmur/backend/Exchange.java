@@ -34,7 +34,8 @@ import android.content.Context;
 
 import org.denovogroup.murmur.objects.CleartextFriends;
 import org.denovogroup.murmur.objects.CleartextMessages;
-import org.denovogroup.murmur.objects.MurmurMessage;
+import org.denovogroup.murmur.objects.MobyMessage;
+import org.denovogroup.murmur.objects.MobyMessage;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.whispersystems.libsignal.logging.Log;
@@ -84,7 +85,7 @@ public class Exchange implements Runnable {
   /* package */ int commonFriends = -1;
 
   /** Messages received from remote party. */
-  /* package */ List<MurmurMessage> mMessagesReceived;
+  /* package */ List<MobyMessage> mMessagesReceived;
 
   /** Friends received from remote party. */
   private CleartextFriends mFriendsReceived;
@@ -222,7 +223,7 @@ public class Exchange implements Runnable {
    *
    * @return The top NUM_MESSAGES_TO_EXCHANGE in the MessageStore.
    */
-  /* package */ List<MurmurMessage> getMessages(int sharedContacts) {
+  /* package */ List<MobyMessage> getMessages(int sharedContacts) {
     return MessageStore.getInstance(mContext).getMessagesForExchange(sharedContacts);
   }
 
@@ -232,17 +233,17 @@ public class Exchange implements Runnable {
    */
   private void sendMessages() {
       // get messages to send
-      List<MurmurMessage> messages = getMessages(0);
+      List<MobyMessage> messages = getMessages(0);
       //notify the recipient how many items we expect to send him.
-      MurmurMessage exchangeInfoMessage = new MurmurMessage("ExchangeAgreement", Integer.toString(messages.size()),1d);
+      MobyMessage exchangeInfoMessage = new MobyMessage(-1L, "ExchangeAgreement", Integer.toString(messages.size()), null);
       if(lengthValueWrite(out, exchangeInfoMessage.toJSON(this.mContext))) {
           // Send messages
-         for(MurmurMessage message : messages){
+         for(MobyMessage message : messages){
 
-             List<MurmurMessage> packet = new ArrayList<>();
+             List<MobyMessage> packet = new ArrayList<>();
              packet.add(message);
 
-              CleartextMessages messagesMessage = new CleartextMessages((ArrayList<MurmurMessage>) packet);
+              CleartextMessages messagesMessage = new CleartextMessages((ArrayList<MobyMessage>) packet);
               lengthValueWrite(out, messagesMessage.toJson(this.mContext));
           }
       }
@@ -280,10 +281,10 @@ public class Exchange implements Runnable {
   private void receiveMessages() {
       //the first message received is a hint, telling the us how many messages will be sent
       int messageCount = 0;
-      MurmurMessage exchangeInfo = MurmurMessage.fromJSON(this.mContext, lengthValueRead(in));
+      MobyMessage exchangeInfo = MobyMessage.fromJSON(this.mContext, lengthValueRead(in));
       if(exchangeInfo != null){
           try {
-              messageCount = Math.min(NUM_MESSAGES_TO_EXCHANGE, Integer.parseInt(exchangeInfo.text));
+              messageCount = Math.min(NUM_MESSAGES_TO_EXCHANGE, Integer.parseInt(exchangeInfo.getPayload()));
           } catch (Exception e){}
       }
 
@@ -291,7 +292,7 @@ public class Exchange implements Runnable {
       if(mMessagesReceived == null) mMessagesReceived = new ArrayList<>();
 
       //Define the get single message task
-      class ReceiveSingleMessage implements Callable<List<MurmurMessage>> {
+      class ReceiveSingleMessage implements Callable<List<MobyMessage>> {
 
         private Context context;
 
@@ -299,7 +300,7 @@ public class Exchange implements Runnable {
           this.context = context;
         }
           @Override
-          public List<MurmurMessage> call() throws Exception {
+          public List<MobyMessage> call() throws Exception {
               CleartextMessages mCurrentReceived;
               mCurrentReceived = CleartextMessages.fromJson(this.context, lengthValueRead(in));
               return mCurrentReceived.messages;
@@ -309,9 +310,9 @@ public class Exchange implements Runnable {
       //read from the stream until either times out or get all the messages
       ExecutorService executor = Executors.newSingleThreadExecutor();
       while(mMessagesReceived.size() < messageCount) {
-          Future<List<MurmurMessage>> task = executor.submit(new ReceiveSingleMessage(this.mContext));
+          Future<List<MobyMessage>> task = executor.submit(new ReceiveSingleMessage(this.mContext));
           try {
-              List<MurmurMessage> res = task.get(EXCHANGE_TIMEOUT, TimeUnit.MILLISECONDS);
+              List<MobyMessage> res = task.get(EXCHANGE_TIMEOUT, TimeUnit.MILLISECONDS);
               mMessagesReceived.addAll(res);
           } catch (InterruptedException |ExecutionException | TimeoutException e) {
               e.printStackTrace();
@@ -398,7 +399,7 @@ public class Exchange implements Runnable {
    * @return The set of messages received from the remote peer, or null if we
    * the exchange hasn't completed yet or the exchange failed.
    */ 
-  public List<MurmurMessage> getReceivedMessages() {
+  public List<MobyMessage> getReceivedMessages() {
     if (getExchangeStatus() == Status.SUCCESS || getExchangeStatus() == Status.ERROR_RECOVERABLE) {
       return mMessagesReceived;
     } else {

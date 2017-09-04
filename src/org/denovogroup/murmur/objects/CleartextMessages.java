@@ -14,28 +14,28 @@ import java.util.List;
 
 /**
  * Protobuf representation of a set of messages to be send over the wire to
- * a communication partner. Each message is a nested MurmurMessage protobuf message.
+ * a communication partner. Each message is a nested MobyMessage protobuf message.
  */
 public final class CleartextMessages extends Message {
 
-  public static final List<MurmurMessage> DEFAULT_MESSAGES = Collections.emptyList();
+  public static final List<MobyMessage> DEFAULT_MESSAGES = Collections.emptyList();
     private static final String MESSAGES = "messages";
 
   /**
-   * This is called a MurmurMessage to avoid ambiguity with Wire.Message.
+   * This is called a MobyMessage to avoid ambiguity with Wire.Message.
    * It represents a message and its priority.
    * A list of messages.
    */
-  public final List<MurmurMessage> messages;
+  public final List<MobyMessage> messages;
 
-  public CleartextMessages(ArrayList<MurmurMessage> messages) {
-    this.messages = (List<MurmurMessage>) messages.clone();
+  public CleartextMessages(ArrayList<MobyMessage> messages) {
+    this.messages = (List<MobyMessage>) messages.clone();
   }
 
     public JSONObject toJson(Context context){
         JSONObject json = new JSONObject();
         JSONArray jsonArray = new JSONArray();
-        for(MurmurMessage message : messages){
+        for(MobyMessage message : messages){
             jsonArray.put(message.toJSON(context));
         }
         try {
@@ -49,11 +49,11 @@ public final class CleartextMessages extends Message {
     public static CleartextMessages fromJson(Context context, JSONObject json){
         try {
             JSONArray jsonArray = json.getJSONArray(MESSAGES);
-            List<MurmurMessage> messages = new ArrayList<>();
+            List<MobyMessage> messages = new ArrayList<>();
             for(int i=0; i<json.length(); i++){
-                messages.add(MurmurMessage.fromJSON(context, (String) jsonArray.get(i)));
+                messages.add(MobyMessage.fromJSON(context, (String) jsonArray.get(i)));
             }
-            return new CleartextMessages((ArrayList<MurmurMessage>) messages);
+            return new CleartextMessages((ArrayList<MobyMessage>) messages);
         } catch (JSONException e) {
             e.printStackTrace();
         }

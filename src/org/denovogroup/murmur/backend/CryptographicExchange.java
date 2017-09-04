@@ -33,7 +33,7 @@ package org.denovogroup.murmur.backend;
 import org.denovogroup.murmur.backend.Crypto.PrivateSetIntersection;
 import org.denovogroup.murmur.backend.Crypto.PrivateSetIntersection.ServerReplyTuple;
 import org.denovogroup.murmur.objects.ClientMessage;
-import org.denovogroup.murmur.objects.MurmurMessage;
+import org.denovogroup.murmur.objects.MobyMessage;
 import org.denovogroup.murmur.objects.ServerMessage;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -218,7 +218,7 @@ public class CryptographicExchange extends Exchange {
       Log.d(TAG, "sending messages");
       //create a message pool to be sent and send each message individually to allow partial data recovery in case of connection loss
       boolean success = true;
-      List<MurmurMessage> messagesPool = getMessages(commonFriends);
+      List<MobyMessage> messagesPool = getMessages(commonFriends);
 
       //notify the recipient how many items we expect to send him.
       JSONObject exchangeInfoMessage = new JSONObject("{\""+MESSAGE_COUNT_KEY+"\":"+messagesPool.size()+"}");
@@ -226,7 +226,7 @@ public class CryptographicExchange extends Exchange {
       if(!lengthValueWrite(out, exchangeInfoMessage)){
           success = false;
       } else {
-          for (MurmurMessage message : messagesPool) {
+          for (MobyMessage message : messagesPool) {
               Log.d(TAG, "sending a message");
               List<JSONObject> messageWrapper = new ArrayList<>();
               messageWrapper.add(message.toJSON(mContext));
@@ -302,7 +302,7 @@ public class CryptographicExchange extends Exchange {
               //Add everything passed in the wrapper to the pool
               for(JSONObject message : mRemoteClientMessage.messages) {
                   Log.d(TAG, "unwrapping message");
-                  mMessagesReceived.add(MurmurMessage.fromJSON(mContext, message));
+                  mMessagesReceived.add(MobyMessage.fromJSON(mContext, message));
                   Log.d(TAG, "message unwrapped");
               }
           } catch (ExecutionException ex){

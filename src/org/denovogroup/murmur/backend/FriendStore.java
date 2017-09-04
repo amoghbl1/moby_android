@@ -45,12 +45,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Storage for friends that uses StorageBase underneath. 
+ * Storage for friends that uses StorageBase underneath.
  */
 public class FriendStore extends SQLiteOpenHelper{
   /** A handle for the underlying store */
   private StorageBase store;
-  
+
   /** The internal key used in the underlying store for Murmur friend data. */
   private static final String FRIENDS_STORE_KEY = "MurmurFriend-";
 
@@ -129,7 +129,7 @@ public class FriendStore extends SQLiteOpenHelper{
    *
    * This doesn't take arguments but throws an underlying IllegalArgumentException.
    * Which is awkward, but it needs to be some kind of exception, and the underlying
-   * exception has the most information. The exception might be thrown by 
+   * exception has the most information. The exception might be thrown by
    * base64ToBytes().
    *
    * @return The set of all stored friend IDs, as byte[].
@@ -137,7 +137,7 @@ public class FriendStore extends SQLiteOpenHelper{
   public ArrayList<byte[]> getAllFriendsBytes() throws IllegalArgumentException {
     Set<String> base64s = getAllFriends();
     ArrayList<byte[]> byteArrays = new ArrayList<byte[]>();
-    for (String base64 : base64s) { 
+    for (String base64 : base64s) {
       byte[] bytes = base64ToBytes(base64);
       byteArrays.add(bytes);
     }
@@ -195,8 +195,8 @@ public class FriendStore extends SQLiteOpenHelper{
    * if the code was malformed/null/didn't contain an ID.
    */
   public static byte[] getPublicIDFromQR(String qrContents) {
-    if (qrContents == null) { 
-      return null; 
+    if (qrContents == null) {
+      return null;
     } else if (!qrContents.startsWith(QR_FRIENDING_SCHEME)) {
       return null;
     } else {
@@ -209,7 +209,7 @@ public class FriendStore extends SQLiteOpenHelper{
       // But I don't know what the spec is for these keys, so I can't verify more now.
       return base64ToBytes(qrContents.substring(QR_FRIENDING_SCHEME.length()));
     }
-    
+
   }
 
     /** Get the current instance of FriendStore and create one if necessary.

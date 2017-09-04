@@ -170,34 +170,18 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
 
             SignalServiceAddress address = getPushAddress(record.getIndividualRecipient().getNumber());
             SignalServiceMessageSender messageSender = messageSenderFactory.create();
-
             OutgoingPushMessage opm = messageSender.getEncryptedMessageAssumingSession(address, content, false);
 
             MessageStore messageStore = MessageStore.getInstance(context);
-            float trust = 1.0f;
-            int priority = 0;
-            SecurityProfile currentProfile = org.denovogroup.murmur.backend.SecurityManager.getCurrentProfile(context);
-
-            String pseudonym = ""+TextSecurePreferences.getLocalRegistrationId(context);
-            long timestamp = System.currentTimeMillis();
-
-            Random random = new Random();
-            String messageIdStr = record.getRecipients().getPrimaryRecipient().getNumber().replaceAll("\\s", "");
-
-            // String messageId = Base64.encodeToString(Crypto.encodeString(String.valueOf(idLong)), Base64.NO_WRAP);
-
-            String messageParent = TextSecurePreferences.getLocalNumber(context);
-            int restrictedHops = 0;
 
 
-            String encryptedMessage =  ByteString.copyFrom(JsonUtil.toJson(opm).getBytes()).toStringUtf8();
+            long   timestamp   = System.currentTimeMillis();
+            String destination = record.getRecipients().getPrimaryRecipient().getNumber().replaceAll("\\s", "");
+            String source      = TextSecurePreferences.getLocalNumber(context);
+            String payload     =  ByteString.copyFrom(JsonUtil.toJson(opm).getBytes()).toStringUtf8();
 
-            Log.d(TAG, "Sending timestamp: " + timestamp + " encrypted message: " + encryptedMessage);
-            messageStore.addMessage(context, messageIdStr,
-                                    encryptedMessage, trust, priority,
-                                    pseudonym, timestamp, true,
-                                    timestamp, null,
-                                    messageParent, true, restrictedHops, 0, null, messageParent);
+            Log.d(TAG, "Sending timestamp: " + timestamp + " encrypted message: " + payload);
+            messageStore.addMessage(timestamp, source, destination, payload);
 
             ExchangeHistoryTracker.getInstance(context).cleanHistory(null);
             MessageStore.getInstance(context).updateStoreVersion();
