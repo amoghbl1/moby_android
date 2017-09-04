@@ -174,11 +174,10 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
 
             MessageStore messageStore = MessageStore.getInstance(context);
 
-
             long   timestamp   = System.currentTimeMillis();
             String destination = record.getRecipients().getPrimaryRecipient().getNumber().replaceAll("\\s", "");
             String source      = TextSecurePreferences.getLocalNumber(context);
-            String payload     =  ByteString.copyFrom(JsonUtil.toJson(opm).getBytes()).toStringUtf8();
+            String payload     = opm.getContent();
 
             Log.d(TAG, "Sending timestamp: " + timestamp + " encrypted message: " + payload);
             messageStore.addMessage(timestamp, source, destination, payload);
