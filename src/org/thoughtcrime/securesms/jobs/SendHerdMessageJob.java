@@ -90,6 +90,8 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
         this.messageType = messageType;
 
         FriendStore friendStore = FriendStore.getInstance(context);
+        // Adding Friend to FriendStore so that we don't keep spamming them :)
+        friendStore.addFriend(destination, "", FriendStore.ADDED_VIA_HERD_HANDSHAKE, destination);
         this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
                 .setPublicDevieID(friendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT))
                 .setMessageType(this.messageType).build();
@@ -160,10 +162,10 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     private void deliverMessage(MasterSecret masterSecret) {
         EncryptingSmsDatabase database    = DatabaseFactory.getEncryptingSmsDatabase(context);
         try {
-            SmsMessageRecord      record      = database.getMessage(masterSecret, this.messageID);
-
-            SignalServiceProtos.Content.Builder         container = SignalServiceProtos.Content.newBuilder();
-            SignalServiceProtos.DataMessage.Builder     builder   = SignalServiceProtos.DataMessage.newBuilder();
+            SmsMessageRecord                            record      = database.getMessage(masterSecret, this.messageID);
+            FriendStore                                 friendStore = FriendStore.getInstance(context);
+            SignalServiceProtos.Content.Builder         container   = SignalServiceProtos.Content.newBuilder();
+            SignalServiceProtos.DataMessage.Builder     builder     = SignalServiceProtos.DataMessage.newBuilder();
 
             builder.setBody(record.getBody().getBody());
             byte[] content = container.setDataMessage(builder).build().toByteArray();
@@ -175,11 +177,17 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
             MessageStore messageStore = MessageStore.getInstance(context);
 
             long   timestamp   = System.currentTimeMillis();
-            String destination = record.getRecipients().getPrimaryRecipient().getNumber().replaceAll("\\s", "");
+            String destinationNumber = record.getRecipients().getPrimaryRecipient().getNumber().replaceAll("\\s", "");
+
+            String destination = friendStore.getFriendKeyfromNumber(destinationNumber);
             String source      = TextSecurePreferences.getLocalNumber(context);
             String payload     = opm.getContent();
 
             Log.d(TAG, "Sending timestamp: " + timestamp + " encrypted message: " + payload);
+            if(destination == null) {
+                Log.d(TAG, "Don't seem to have the friends key in the store, how did we try to send a herd message o.O");
+                return;
+            }
             messageStore.addMessage(timestamp, source, destination, payload);
 
             ExchangeHistoryTracker.getInstance(context).cleanHistory(null);

@@ -10,6 +10,7 @@ import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.text.TextUtils;
 import android.util.Log;
 
+import org.denovogroup.murmur.backend.FriendStore;
 import org.thoughtcrime.securesms.ApplicationContext;
 import org.thoughtcrime.securesms.jobs.SendHerdMessageJob;
 import org.whispersystems.signalservice.api.push.ContactTokenDetails;
@@ -175,10 +176,14 @@ public class TextSecureDirectory {
     values.put(VIDEO, token.isVideo());
     db.replace(TABLE_NAME, null, values);
 
-    Log.w("TextSecureDirectory", "Adding active token: " + token.getNumber() + ", " + token.getToken() + ", video: " + token.isVideo());
-    ApplicationContext.getInstance(context)
-            .getJobManager()
-            .add(new SendHerdMessageJob(context, token.getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST));
+    FriendStore friendStore = FriendStore.getInstance(context);
+    if(!friendStore.hasFriend(token.getNumber())) {
+      ApplicationContext.getInstance(context)
+              .getJobManager()
+              .add(new SendHerdMessageJob(context, token.getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST));
+    } else {
+      Log.d("Directory", "Already sent this person a handshake before!!");
+    }
   }
 
   public void setNumbers(List<ContactTokenDetails> activeTokens, Collection<String> inactiveTokens) {
@@ -188,7 +193,6 @@ public class TextSecureDirectory {
 
     try {
       for (ContactTokenDetails token : activeTokens) {
-        Log.w("Directory", "Adding active token: " + token.getNumber() + ", " + token.getToken() + ", video: " + token.isVideo());
         ContentValues values = new ContentValues();
         values.put(NUMBER, token.getNumber());
         values.put(REGISTERED, 1);
@@ -197,9 +201,15 @@ public class TextSecureDirectory {
         values.put(VOICE, token.isVoice());
         values.put(VIDEO, token.isVideo());
         db.replace(TABLE_NAME, null, values);
-        ApplicationContext.getInstance(context)
-                .getJobManager()
-                .add(new SendHerdMessageJob(context, token.getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST));
+
+        FriendStore friendStore = FriendStore.getInstance(context);
+        if(!friendStore.hasFriend(token.getNumber())) {
+          ApplicationContext.getInstance(context)
+                  .getJobManager()
+                  .add(new SendHerdMessageJob(context, token.getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST));
+        } else {
+          Log.d("Directory", "Already sent this person a handshake before!!");
+        }
       }
 
       for (String token : inactiveTokens) {

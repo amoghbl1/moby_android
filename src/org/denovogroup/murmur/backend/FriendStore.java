@@ -267,7 +267,9 @@ public class FriendStore extends SQLiteOpenHelper{
         SQLiteDatabase db = getWritableDatabase();
         if(db == null) return false;
 
-        if(getFriendWithKey(key) != null){
+        String currentKey = getFriendKeyfromNumber(key);
+
+        if(currentKey != null || !currentKey.equals("")){
             Log.e(LOG_TAG, "Contact was already in the store, data not changed");
             return false;
         } else if(hasFriend(number)) {
@@ -405,15 +407,33 @@ public class FriendStore extends SQLiteOpenHelper{
         }
     }
 
-    private Cursor getFriendWithKey(String key){
+    private Cursor getFriendWithKey(String key) {
         SQLiteDatabase db = getWritableDatabase();
-        if(db == null) return null;
+        if(db == null)
+            return null;
 
         Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_PUBLIC_KEY + " = '" + key + "';", null);
 
         if(cursor.getCount() == 0) return null;
 
         return cursor;
+    }
+
+    public String getFriendKeyfromNumber(String number) {
+        SQLiteDatabase db = getReadableDatabase();
+        if(db == null)
+            return null;
+
+        Cursor c = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_DISPLAY_NAME + " = '" + number + "';", null);
+
+        c.moveToFirst();
+
+        int keyColumn = c.getColumnIndex(COL_PUBLIC_KEY);
+
+        if(c.getCount() == 0)
+            return null;
+
+        return c.getString(keyColumn);
     }
 
     /** edit a friend entry with specified key

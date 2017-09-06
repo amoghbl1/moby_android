@@ -177,10 +177,10 @@ public class PushDecryptJob extends ContextJob {
 
         FriendStore friendStore = FriendStore.getInstance(context);
 
-        // TODO: Add logic to handle trust of a number that tries to do a handshake.
-        friendStore.addFriend(envelope.getSource(), herdMessage.getPublicDevieID(), FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource());
+        // TODO amoghbl1: Add logic to handle trust of a number that tries to do a handshake.
+        boolean added = friendStore.addFriend(envelope.getSource(), herdMessage.getPublicDevieID(), FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource());
 
-        if(herdMessage.hasMessageType() && herdMessage.getMessageType() == SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST) {
+        if(herdMessage.hasMessageType() && herdMessage.getMessageType() == SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST && added) {
           ApplicationContext.getInstance(context)
                   .getJobManager()
                   .add(new SendHerdMessageJob(context, envelope.getSource(), SendHerdMessageJob.TYPE_HANDSHAKE_RESPONSE));
