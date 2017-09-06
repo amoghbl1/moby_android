@@ -66,9 +66,9 @@ public class Exchange implements Runnable {
     /** Peer bluetooth address with which interacting, for history optimization. */
   /* package */ String peerAddress;
   /** Store of friends to use in this exchange. */
-  /* package */ FriendStore friendStore;
+  /* package */ FriendStore mFriendStore;
   /** Store of messages to use in this exchange. */
-  /* package */ MessageStore messageStore;
+  /* package */ MessageStore mMessageStore;
   /** Input stream connected to the remote communication partner. */
   /* package */ InputStream in;
   /** Output stream connected to the remote communication partner. */
@@ -168,8 +168,8 @@ public class Exchange implements Runnable {
       this.peerAddress = peerAddress;
     this.in = in;
     this.out = out;
-    this.friendStore = friendStore;
-    this.messageStore = messageStore;
+    this.mFriendStore = friendStore;
+    this.mMessageStore = messageStore;
     this.asInitiator = asInitiator;
     this.callback = callback;
     this.mContext = context;
@@ -211,7 +211,7 @@ public class Exchange implements Runnable {
    */
   private void sendFriends() {
     List<String> friends = new ArrayList<String>();
-    friends.addAll(friendStore.getAllValidFriends());
+    friends.addAll(mFriendStore.getAllValidFriends());
     CleartextFriends friendsMessage = new CleartextFriends((ArrayList<String>) friends);
       JSONObject friendsMessageJson = friendsMessage.toJson();
     lengthValueWrite(out, friendsMessageJson);
@@ -224,7 +224,7 @@ public class Exchange implements Runnable {
    * @return The top NUM_MESSAGES_TO_EXCHANGE in the MessageStore.
    */
   /* package */ List<MobyMessage> getMessages(int sharedContacts) {
-    return MessageStore.getInstance(mContext).getMessagesForExchange(sharedContacts);
+    return mMessageStore.getMessagesForExchange(sharedContacts);
   }
 
   /**
@@ -257,7 +257,7 @@ public class Exchange implements Runnable {
     this.mFriendsReceived = friendsReceived;
 
     if (mFriendsReceived != null && mFriendsReceived.friends != null) {
-      Set<String> myFriends = friendStore.getAllValidFriends();
+      Set<String> myFriends = mFriendStore.getAllValidFriends();
       Set<String> theirFriends = new HashSet(mFriendsReceived.friends);
       Set<String> intersection = new HashSet(myFriends);
       intersection.retainAll(theirFriends);

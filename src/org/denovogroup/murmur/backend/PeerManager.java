@@ -65,9 +65,6 @@ public class PeerManager {
   /** The most recent, up-to-date list of peers. */
   private List<Peer> mCurrentPeers;
 
-  /** For app-local intent broadcasting/receiving of peer events. */
-  private LocalBroadcastManager mBroadcastManager;
-
   /** Handle to the app's BluetoothSpeaker. */
   private BluetoothSpeaker mBluetoothSpeaker;
 
@@ -105,11 +102,9 @@ public class PeerManager {
    * Private constructor. Use PeerManager.getInstance() to obtain the app's
    * instance of the class.
    *
-   * @param context A context object from the app.
    */
-  private PeerManager(Context context) {
+  private PeerManager() {
     mCurrentPeers = new ArrayList<Peer>();
-    mBroadcastManager = LocalBroadcastManager.getInstance(context); 
 
     Log.d(TAG,  "Finished PeerManager constructor.");
   }
@@ -117,12 +112,11 @@ public class PeerManager {
   /**
    * Obtain the current instance of PeerManager.
    *
-   * @param context A context object from the app.
    * @return The app's instance of PeerManager.
    */
-  public static PeerManager getInstance(Context context) {
+  public static PeerManager getInstance() {
     if (sPeerManager == null) {
-      sPeerManager = new PeerManager(context);
+      sPeerManager = new PeerManager();
       Log.d(TAG,  "Created instance of PeerManager");
     }
     return sPeerManager;

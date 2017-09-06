@@ -155,7 +155,7 @@ public class CryptographicExchange extends Exchange {
   private void initializePSIObjects() throws NoSuchAlgorithmException, 
                                              IllegalArgumentException {
       Log.d(TAG, "initializing PSIObject");
-      ArrayList<byte[]> friends = friendStore.getAllValidFriendsBytes();
+      ArrayList<byte[]> friends = mFriendStore.getAllValidFriendsBytes();
     try {
       // The clientPSI object manages the interaction in which we're the "client".
       // The serverPSI object manages the interaction in which we're the "server".

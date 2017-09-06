@@ -122,7 +122,7 @@ public class MurmurService extends Service {
     /**
      * Handle to Rangzen key-value storage provider.
      */
-    private StorageBase mStore;
+    private StorageBase mStorageBase;
 
     /**
      * Storage for friends.
@@ -152,6 +152,10 @@ public class MurmurService extends Service {
      * Ongoing exchange.
      */
     private Exchange mExchange;
+
+    private ServiceWatchDog mServiceWatchDog;
+
+    private ExchangeHistoryTracker mExchangeHistoryTracker;
 
     /**
      * Socket over which the ongoing exchange is taking place.
@@ -252,7 +256,15 @@ public class MurmurService extends Service {
     @Override
     public void onCreate() {
 
-        ServiceWatchDog.getInstance().init(this);
+        mServiceWatchDog        = ServiceWatchDog.getInstance();
+        mLocalBroadcastManager  = LocalBroadcastManager.getInstance(this);
+        sRangzenServiceInstance = this;
+        mPeerManager            = PeerManager.getInstance();
+        mFriendStore            = FriendStore.getInstance(this);
+        mMessageStore           = MessageStore.getInstance(this);
+        mWifiDirectSpeaker      = WifiDirectSpeaker.getInstance();
+        mStorageBase            = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
+
 
         if (errorHandler != null) {
             IntentFilter filter = new IntentFilter(SERVICE_ERROR_HANDLER_FILTER);
@@ -264,26 +276,19 @@ public class MurmurService extends Service {
 
         Log.i(TAG, "MurmurService onCreate.");
 
-        sRangzenServiceInstance = this;
+        mServiceWatchDog.init(this);
 
-        mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
-
-        mPeerManager = PeerManager.getInstance(this);
-        mBluetoothSpeaker = new BluetoothSpeaker(this, mPeerManager);
+        mBluetoothSpeaker = new BluetoothSpeaker(this, mFriendStore, mMessageStore);
         mPeerManager.setBluetoothSpeaker(mBluetoothSpeaker);
 
         mStartTime = new Date();
 
-        mStore = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
-        mFriendStore = FriendStore.getInstance(this);
 
-        mWifiDirectSpeaker = WifiDirectSpeaker.getInstance();
         mWifiDirectSpeaker.init(this,
                 mPeerManager,
                 mBluetoothSpeaker,
                 new WifiDirectFrameworkGetter());
 
-        mMessageStore = MessageStore.getInstance(this);
 
         setWifiDirectFriendlyName(); //TODO loop this periodically until name returned to receiver is appropriate, if name changed again and is not apropriate schedule  it again
         mWifiDirectSpeaker.setmSeekingDesired(true);
@@ -332,7 +337,7 @@ public class MurmurService extends Service {
      * Called when the service is destroyed.
      */
     public void onDestroy() {
-        ServiceWatchDog.getInstance().notifyServiceDestroy();
+        mServiceWatchDog.notifyServiceDestroy();
         if (errorHandler != null) {
             try {
                 unregisterReceiver(errorHandler);
@@ -364,7 +369,7 @@ public class MurmurService extends Service {
      */
     private boolean readyToConnect() {
         long now = System.currentTimeMillis();
-        long lastExchangeMillis = mStore.getLong(LAST_EXCHANGE_TIME_KEY, -1);
+        long lastExchangeMillis = mStorageBase.getLong(LAST_EXCHANGE_TIME_KEY, -1);
 
         boolean timeSinceLastOK;
         if (lastExchangeMillis == -1) {
@@ -388,7 +393,7 @@ public class MurmurService extends Service {
     private void setLastExchangeTime() {
         if (!USE_MINIMAL_LOGGING) Log.i(TAG, "Setting last exchange time");
         long now = System.currentTimeMillis();
-        mStore.putLong(LAST_EXCHANGE_TIME_KEY, now);
+        mStorageBase.putLong(LAST_EXCHANGE_TIME_KEY, now);
     }
 
     /**
@@ -405,13 +410,12 @@ public class MurmurService extends Service {
         */
 
         // TODO(lerner): Why not just use mPeerManager?
-        PeerManager peerManager = PeerManager.getInstance(getApplicationContext());
         mPeerManager.tasks();
         // peerManager.tasks();
         if (!mBluetoothSpeaker.tasks()) return;
         if (!mWifiDirectSpeaker.tasks()) return;
 
-        List<Peer> peers = peerManager.getPeers();
+        List<Peer> peers = mPeerManager.getPeers();
         // TODO(lerner): Don't just connect all willy-nilly every time we have
         // an opportunity. Have some kind of policy for when to connect.
         if (peers.size() > 0 && readyToConnect()) {
@@ -422,18 +426,18 @@ public class MurmurService extends Service {
                 peers.clear();
                 peers.add(selectedPeer);
                 ExchangeHistoryTracker.ExchangeHistoryItem historyItem
-                        = ExchangeHistoryTracker.getInstance(getApplicationContext()).getHistoryItem(selectedPeer.address);
+                        = mExchangeHistoryTracker.getHistoryItem(selectedPeer.address);
                 if (historyItem != null) {
-                    ExchangeHistoryTracker.getInstance(getApplicationContext()).updatePickHistory(selectedPeer.address);
+                    mExchangeHistoryTracker.updatePickHistory(selectedPeer.address);
                 } else {
-                    ExchangeHistoryTracker.getInstance(getApplicationContext()).updateHistory(this, selectedPeer.address);
+                    mExchangeHistoryTracker.updateHistory(this, selectedPeer.address);
                 }
             }
             Log.i(TAG, String.format("Checking %d peers", peers.size()));
             for (Peer peer : peers) {
                 Log.d(TAG, "Checking peer:" + peer);
                 try {
-                    if (peerManager.thisDeviceSpeaksTo(peer)) {
+                    if (mPeerManager.thisDeviceSpeaksTo(peer)) {
                         Log.d(TAG, "This device is in charge of starting conversation");
                         // Connect to the peer, starting an exchange with the peer once
                         // connected. We only do this if thisDeviceSpeaksTo(peer), which
@@ -443,13 +447,13 @@ public class MurmurService extends Service {
 
                         //optimize connection using history tracker
                         if (USE_BACKOFF) {
-                            ExchangeHistoryTracker.ExchangeHistoryItem historyItem = ExchangeHistoryTracker.getInstance(getApplicationContext()).getHistoryItem(peer.address);
+                            ExchangeHistoryTracker.ExchangeHistoryItem historyItem = mExchangeHistoryTracker.getHistoryItem(peer.address);
                             boolean hasHistory = historyItem != null;
                             boolean storeVersionChanged = false;
                             boolean waitedMuch = false;
 
                             if (hasHistory) {
-                                storeVersionChanged = !historyItem.storeVersion.equals(MessageStore.getInstance(MurmurService.this).getStoreVersion());
+                                storeVersionChanged = !historyItem.storeVersion.equals(mMessageStore.getStoreVersion());
                                 waitedMuch = historyItem.lastExchangeTime + Math.min(
                                         Math.pow(2, historyItem.attempts) * BACKOFF_FOR_ATTEMPT_MILLIS, BACKOFF_MAX) < System.currentTimeMillis();
                             }
@@ -496,9 +500,6 @@ public class MurmurService extends Service {
         }
 
         Log.i(TAG, "connecting to " + peer);
-        // TODO(lerner): Why not just use mPeerManager?
-        PeerManager peerManager = PeerManager.getInstance(this);
-
         // This gets reset to false once an exchange is complete or when the
         // connect call below fails. Until then, no more connections will be
         // attempted. (One at a time now!)
@@ -533,8 +534,8 @@ public class MurmurService extends Service {
                             socket.getInputStream(),
                             socket.getOutputStream(),
                             true,
-                            FriendStore.getInstance(MurmurService.this),
-                            MessageStore.getInstance(MurmurService.this),
+                            mFriendStore,
+                            mMessageStore,
                             MurmurService.this.mExchangeCallback);
                     (new Thread(mExchange)).start();
                 } catch (IOException e) {
@@ -599,17 +600,14 @@ public class MurmurService extends Service {
     /* package */ ExchangeCallback mExchangeCallback = new ExchangeCallback() {
 
         private void handleMessage(MobyMessage m) {
-            Log.d(TAG, "Message for us from: " + m.getSource());
             // TODO amoghbl1: Figure out if we need to decrypt inside a Job or not.
             String encodedMessage = m.getPayload();
-            Log.d(TAG, "My encodedMessage: " + encodedMessage);
             byte[] decodedContent = null;
             try {
                 decodedContent = Base64.decode(encodedMessage);
             } catch (IOException e) {
 
             }
-            Log.d(TAG, "My byte string: " + new String(decodedContent));
 
             // NOTE: This is going to break for multi device encryption :)
             SignalServiceEnvelope envelope = new SignalServiceEnvelope(SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE, m.getSource(),
@@ -624,7 +622,7 @@ public class MurmurService extends Service {
         @Override
         public void success(Exchange exchange) {
             Context context = getApplicationContext();
-            ServiceWatchDog.getInstance().notifyLastExchange();
+            mServiceWatchDog.notifyLastExchange();
             boolean hasNew = false;
             List<MobyMessage> newMessages = exchange.getReceivedMessages();
             int friendOverlap = exchange.getCommonFriends();
@@ -639,11 +637,7 @@ public class MurmurService extends Service {
                     // TODO amoghbl1: Figure out what to do in this case.
                 } else {
                     hasNew = true;
-                    /**
-                     * TODO amoghbl1:
-                     * Check if the message is for us, we would need to replace this with the tag that
-                     * we decide in the paper.
-                     */
+
                     String ourIdentity = mFriendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT);
                     Log.d(TAG, "Destination: " + message.getDestination() + "\n us: " + ourIdentity);
                     if (message.getDestination().equals(ourIdentity))
@@ -656,8 +650,8 @@ public class MurmurService extends Service {
 
             if (hasNew) {
                 mMessageStore.updateStoreVersion();
-                ExchangeHistoryTracker.getInstance(getApplicationContext()).incrementExchangeCount();
-                ExchangeHistoryTracker.getInstance(getApplicationContext()).updateHistory(MurmurService.this, exchange.getPeerAddress());
+                mExchangeHistoryTracker.incrementExchangeCount();
+                mExchangeHistoryTracker.updateHistory(MurmurService.this, exchange.getPeerAddress());
                 if (isAppInForeground()) {
                     Intent intent = new Intent();
                     intent.setAction(MessageStore.NEW_MESSAGE);
@@ -669,16 +663,16 @@ public class MurmurService extends Service {
 
                     // showUnreadMessagesNotification();
                 }
-            } else if (ExchangeHistoryTracker.getInstance(getApplicationContext()).getHistoryItem(exchange.getPeerAddress()) != null) {
+            } else if (mExchangeHistoryTracker.getHistoryItem(exchange.getPeerAddress()) != null) {
                 // Has history, should increment the attempts counter
-                ExchangeHistoryTracker.getInstance(getApplicationContext()).updateAttemptsHistory(exchange.getPeerAddress());
+                mExchangeHistoryTracker.updateAttemptsHistory(exchange.getPeerAddress());
                 if (USE_BACKOFF)
                     Log.d(TAG, "Exchange finished without receiving new messages, back-off timeout increased to:" +
-                            Math.min(BACKOFF_MAX, Math.pow(2, ExchangeHistoryTracker.getInstance(getApplicationContext()).getHistoryItem(exchange.getPeerAddress()).attempts) * BACKOFF_FOR_ATTEMPT_MILLIS));
+                            Math.min(BACKOFF_MAX, Math.pow(2, mExchangeHistoryTracker.getHistoryItem(exchange.getPeerAddress()).attempts) * BACKOFF_FOR_ATTEMPT_MILLIS));
             } else {
                 // No history file, create one
                 Log.d(TAG, "Exchange finished without receiving new messages from new peer, creating history track");
-                ExchangeHistoryTracker.getInstance(getApplicationContext()).updateHistory(MurmurService.this, exchange.getPeerAddress());
+                mExchangeHistoryTracker.updateHistory(MurmurService.this, exchange.getPeerAddress());
             }
 
             MurmurService.this.cleanupAfterExchange();
@@ -692,7 +686,7 @@ public class MurmurService extends Service {
 
         @Override
         public void recover(Exchange exchange, String reason) {
-            ServiceWatchDog.getInstance().notifyLastExchange();
+            mServiceWatchDog.notifyLastExchange();
             Log.e(TAG, "Exchange failed but data can be recovered, reason: " + reason);
             boolean hasNew = false;
             List<MobyMessage> newMessages = exchange.getReceivedMessages();
@@ -714,8 +708,8 @@ public class MurmurService extends Service {
 
             if (hasNew) {
                 mMessageStore.updateStoreVersion();
-                ExchangeHistoryTracker.getInstance(getApplicationContext()).incrementExchangeCount();
-                ExchangeHistoryTracker.getInstance(getApplicationContext()).updateHistory(MurmurService.this, exchange.getPeerAddress());
+                mExchangeHistoryTracker.incrementExchangeCount();
+                mExchangeHistoryTracker.updateHistory(MurmurService.this, exchange.getPeerAddress());
                 if (isAppInForeground()) {
                     Intent intent = new Intent();
                     intent.setAction(MessageStore.NEW_MESSAGE);
@@ -728,7 +722,7 @@ public class MurmurService extends Service {
                     // showUnreadMessagesNotification();
                 }
             } else {
-                ExchangeHistoryTracker.getInstance(getApplicationContext()).updateAttemptsHistory(exchange.getPeerAddress());
+                mExchangeHistoryTracker.updateAttemptsHistory(exchange.getPeerAddress());
             }
 
             MurmurService.this.cleanupAfterExchange();
@@ -864,11 +858,10 @@ public class MurmurService extends Service {
         SecurityProfile currentProfile = SecurityManager.getCurrentProfile(this);
 
         // TODO amoghbl1: Write something to drop messages here.
-        // MessageStore.getInstance(this).deleteOutdatedOrIrrelevant(currentProfile);
     }
 
     private Peer pickBestPeer(List<Peer> peers) {
-        ExchangeHistoryTracker tracker = ExchangeHistoryTracker.getInstance(getApplicationContext());
+        ExchangeHistoryTracker tracker = mExchangeHistoryTracker;
         Peer bestMatch = null;
         long bestMatchLastPicked = 0;
         for (Peer peer : peers) {

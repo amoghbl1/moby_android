@@ -94,13 +94,15 @@ public class BluetoothSpeaker {
 
   /** Receives Bluetooth related broadcasts. */
   private BluetoothBroadcastReceiver mBluetoothBroadcastReceiver;
-  
+
+
+  private FriendStore mFriendStore;
+  private MessageStore mMessageStore;
 
   /**
    * @param context A context, from which to access the Bluetooth subsystem.
-   * @param peerManager The app's PeerManager instance.
    */
-  public BluetoothSpeaker(MurmurService context, PeerManager peerManager) {
+  public BluetoothSpeaker(MurmurService context, FriendStore friendStore, MessageStore messageStore) {
     super();
       Log.i(TAG,  "Creating BluetoothSpeaker");
     mPayload = new byte[EXCHANGE_SIZE];
@@ -109,6 +111,8 @@ public class BluetoothSpeaker {
     }
 
     this.mContext = context;
+    this.mFriendStore = friendStore;
+    this.mMessageStore = messageStore;
     this.mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     this.mBluetoothBroadcastReceiver = new BluetoothBroadcastReceiver(context);
 
@@ -296,17 +300,17 @@ public class BluetoothSpeaker {
     mSocket = mServerSocket.accept();
     Log.i(TAG, "Accepted socket from " + mSocket.getRemoteDevice());
     Log.i(TAG,  "Accepted socket connected? " + mSocket.isConnected());
-      MurmurService.direction = -1;
-      MurmurService.remoteAddress = mSocket.getRemoteDevice().getAddress();
+    MurmurService.direction = -1;
+    MurmurService.remoteAddress = mSocket.getRemoteDevice().getAddress();
     mExchange = new CryptographicExchange(
-                            mContext,
-                            mSocket.getRemoteDevice().getAddress(),
-                            mSocket.getInputStream(),
-                             mSocket.getOutputStream(),
-                             false,
-                             FriendStore.getInstance(mContext),
-                             MessageStore.getInstance(mContext),
-                             mContext.mExchangeCallback);
+            mContext,
+            mSocket.getRemoteDevice().getAddress(),
+            mSocket.getInputStream(),
+            mSocket.getOutputStream(),
+            false,
+            mFriendStore,
+            mMessageStore,
+            mContext.mExchangeCallback);
     //mExchange.execute((Boolean) null);
     // Start the exchange.
     (new Thread(mExchange)).start();
