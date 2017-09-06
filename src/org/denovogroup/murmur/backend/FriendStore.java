@@ -134,8 +134,8 @@ public class FriendStore extends SQLiteOpenHelper{
    *
    * @return The set of all stored friend IDs, as byte[].
    */
-  public ArrayList<byte[]> getAllFriendsBytes() throws IllegalArgumentException {
-    Set<String> base64s = getAllFriends();
+  public ArrayList<byte[]> getAllValidFriendsBytes() throws IllegalArgumentException {
+    Set<String> base64s = getAllValidFriends();
     ArrayList<byte[]> byteArrays = new ArrayList<byte[]>();
     for (String base64 : base64s) {
       byte[] bytes = base64ToBytes(base64);
@@ -360,7 +360,7 @@ public class FriendStore extends SQLiteOpenHelper{
      *
      * @return A set of friends ids.
      */
-    public Set<String> getAllFriends(){
+    public Set<String> getAllValidFriends(){
         Set<String> friends = new HashSet<>();
 
         SQLiteDatabase db = getWritableDatabase();
@@ -371,9 +371,12 @@ public class FriendStore extends SQLiteOpenHelper{
         cursor.moveToFirst();
 
         int keyColIndex = cursor.getColumnIndex(COL_PUBLIC_KEY);
+        String key = "";
 
         while (!cursor.isAfterLast()){
-            friends.add(cursor.getString(keyColIndex));
+            key = cursor.getString(keyColIndex);
+            if(key != null && !key.equals(""))
+                friends.add(key);
             cursor.moveToNext();
         }
         return friends;

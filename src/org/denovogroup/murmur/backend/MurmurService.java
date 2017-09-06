@@ -633,7 +633,6 @@ public class MurmurService extends Service {
             // Handling received Messages.
             Log.i(TAG, "Got " + newMessages.size() + " messages in exchangeCallback");
             Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
-            Set<String> myFriends = mFriendStore.getAllFriends();
             for (MobyMessage message : newMessages) {
                 if (mMessageStore.containsOrRemoved(message.getPayload())) {
                     //update existing message priority unless its marked as removed by user
@@ -702,7 +701,6 @@ public class MurmurService extends Service {
             Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
             if (newMessages != null) {
                 for (MobyMessage message : newMessages) {
-                    Set<String> myFriends = mFriendStore.getAllFriends();
                     if (mMessageStore.containsOrRemoved(message.getPayload())) {
                         //update existing message priority unless its marked as removed by user
                         // TODO amoghbl1: figure out what to do in this case

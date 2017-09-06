@@ -211,7 +211,7 @@ public class Exchange implements Runnable {
    */
   private void sendFriends() {
     List<String> friends = new ArrayList<String>();
-    friends.addAll(friendStore.getAllFriends());
+    friends.addAll(friendStore.getAllValidFriends());
     CleartextFriends friendsMessage = new CleartextFriends((ArrayList<String>) friends);
       JSONObject friendsMessageJson = friendsMessage.toJson();
     lengthValueWrite(out, friendsMessageJson);
@@ -257,7 +257,7 @@ public class Exchange implements Runnable {
     this.mFriendsReceived = friendsReceived;
 
     if (mFriendsReceived != null && mFriendsReceived.friends != null) {
-      Set<String> myFriends = friendStore.getAllFriends();
+      Set<String> myFriends = friendStore.getAllValidFriends();
       Set<String> theirFriends = new HashSet(mFriendsReceived.friends);
       Set<String> intersection = new HashSet(myFriends);
       intersection.retainAll(theirFriends);
