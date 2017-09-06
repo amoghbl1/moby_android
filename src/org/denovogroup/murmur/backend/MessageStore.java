@@ -241,6 +241,29 @@ public class MessageStore extends SQLiteOpenHelper {
         }
     }
 
+    public void logMessages() {
+        SQLiteDatabase db = getReadableDatabase();
+        if(db != null) {
+            Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE, null);
+            cursor.moveToFirst();
+
+            int timestampColumn   = cursor.getColumnIndex(COL_TIMESTAMP);
+            int sourceColumn      = cursor.getColumnIndex(COL_SOURCE);
+            int destinationColumn = cursor.getColumnIndex(COL_DESTINATION);
+            int payloadColumn     = cursor.getColumnIndex(COL_PAYLOAD);
+
+            while (!cursor.isAfterLast()) {
+                Log.d(TAG,
+                        "timestamp: "    + cursor.getLong(timestampColumn) +
+                        " source: "      + cursor.getString(sourceColumn) +
+                        " destination: " + cursor.getString(destinationColumn) +
+                        " payload: "     + cursor.getString(payloadColumn));
+                cursor.moveToNext();
+            }
+
+        }
+    }
+
     public List<MobyMessage> getMessagesForExchange(int sharedContacts){
         SQLiteDatabase db = getReadableDatabase();
         if(db != null){

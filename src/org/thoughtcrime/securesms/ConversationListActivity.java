@@ -245,6 +245,11 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     MessageStore ms =  MessageStore.getInstance(getApplicationContext());
     ms.purgeStore();
   }
+
+  private void dumpMessageStoreToLog() {
+    MessageStore ms = MessageStore.getInstance(getApplicationContext());
+    ms.logMessages();
+  }
   
   private void toggleMurmurState() {
     Boolean flag = false;
