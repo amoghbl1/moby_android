@@ -645,7 +645,9 @@ public class MurmurService extends Service {
                      * Check if the message is for us, we would need to replace this with the tag that
                      * we decide in the paper.
                      */
-                    if (message.getDestination().equals(TextSecurePreferences.getLocalNumber(context).replaceAll("\\s", "")))
+                    String ourIdentity = mFriendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT);
+                    Log.d(TAG, "Destination: " + message.getDestination() + "\n us: " + ourIdentity);
+                    if (message.getDestination().equals(ourIdentity))
                         handleMessage(message);
 
                     mMessageStore.addMessage(message);
