@@ -187,7 +187,7 @@ public class MurmurService extends Service {
     /**
      * When announcing our address over Wifi Direct name, prefix this string to our MAC.
      */
-    public final static String RSVP_PREFIX = "MURMUR-";
+    public final static String RSVP_PREFIX = "MOBY-";
 
     /**
      * Key into storage to store the last time we had an exchange.

@@ -675,7 +675,6 @@ public class SignalServiceMessageSender {
   private OutgoingPushMessage getEncryptedMessage(PushServiceSocket socket, SignalServiceAddress recipient, int deviceId, byte[] plaintext, boolean silent)
       throws IOException, UntrustedIdentityException
   {
-    Log.d(TAG, "getEncryptedMessage for: " + recipient.getNumber() + " deviceId " + deviceId);
     SignalProtocolAddress signalProtocolAddress = new SignalProtocolAddress(recipient.getNumber(), deviceId);
     SignalServiceCipher   cipher                = new SignalServiceCipher(localAddress, store);
 
@@ -715,6 +714,11 @@ public class SignalServiceMessageSender {
     Log.d(TAG, "getEncryptedMessageAssumingSession for: " + recipient.getNumber() + " deviceId " + SignalServiceAddress.DEFAULT_DEVICE_ID);
     SignalProtocolAddress signalProtocolAddress = new SignalProtocolAddress(recipient.getNumber(), SignalServiceAddress.DEFAULT_DEVICE_ID);
     SignalServiceCipher   cipher                = new SignalServiceCipher(localAddress, store);
+
+    if (!store.containsSession(signalProtocolAddress)) {
+      Log.d(TAG, "Trying to send a herd message to someone you've never spoken to. This shouldn't be possible!!");
+      return null;
+    }
 
     try {
       return cipher.encrypt(signalProtocolAddress, plaintext, silent);

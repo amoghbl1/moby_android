@@ -229,7 +229,7 @@ public class CryptographicExchange extends Exchange {
           for (MobyMessage message : messagesPool) {
               Log.d(TAG, "sending a message");
               List<JSONObject> messageWrapper = new ArrayList<>();
-              messageWrapper.add(message.toJSON(mContext));
+              messageWrapper.add(message.toJSON());
               ClientMessage cm = new ClientMessage((ArrayList<JSONObject>)messageWrapper, null);
               if (!lengthValueWrite(out, cm.toJSON())) {
                   success = false;
@@ -302,7 +302,7 @@ public class CryptographicExchange extends Exchange {
               //Add everything passed in the wrapper to the pool
               for(JSONObject message : mRemoteClientMessage.messages) {
                   Log.d(TAG, "unwrapping message");
-                  mMessagesReceived.add(MobyMessage.fromJSON(mContext, message));
+                  mMessagesReceived.add(MobyMessage.fromJSON(message));
                   Log.d(TAG, "message unwrapped");
               }
           } catch (ExecutionException ex){

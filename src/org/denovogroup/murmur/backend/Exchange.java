@@ -236,7 +236,7 @@ public class Exchange implements Runnable {
       List<MobyMessage> messages = getMessages(0);
       //notify the recipient how many items we expect to send him.
       MobyMessage exchangeInfoMessage = new MobyMessage(-1L, "ExchangeAgreement", Integer.toString(messages.size()), null);
-      if(lengthValueWrite(out, exchangeInfoMessage.toJSON(this.mContext))) {
+      if(lengthValueWrite(out, exchangeInfoMessage.toJSON())) {
           // Send messages
          for(MobyMessage message : messages){
 
@@ -281,7 +281,7 @@ public class Exchange implements Runnable {
   private void receiveMessages() {
       //the first message received is a hint, telling the us how many messages will be sent
       int messageCount = 0;
-      MobyMessage exchangeInfo = MobyMessage.fromJSON(this.mContext, lengthValueRead(in));
+      MobyMessage exchangeInfo = MobyMessage.fromJSON(lengthValueRead(in));
       if(exchangeInfo != null){
           try {
               messageCount = Math.min(NUM_MESSAGES_TO_EXCHANGE, Integer.parseInt(exchangeInfo.getPayload()));
@@ -302,7 +302,7 @@ public class Exchange implements Runnable {
           @Override
           public List<MobyMessage> call() throws Exception {
               CleartextMessages mCurrentReceived;
-              mCurrentReceived = CleartextMessages.fromJson(this.context, lengthValueRead(in));
+              mCurrentReceived = CleartextMessages.fromJson(lengthValueRead(in));
               return mCurrentReceived.messages;
           }
       }

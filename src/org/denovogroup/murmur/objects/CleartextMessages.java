@@ -36,7 +36,7 @@ public final class CleartextMessages extends Message {
         JSONObject json = new JSONObject();
         JSONArray jsonArray = new JSONArray();
         for(MobyMessage message : messages){
-            jsonArray.put(message.toJSON(context));
+            jsonArray.put(message.toJSON());
         }
         try {
             json.put(MESSAGES, jsonArray);
@@ -46,12 +46,12 @@ public final class CleartextMessages extends Message {
         return json;
     }
 
-    public static CleartextMessages fromJson(Context context, JSONObject json){
+    public static CleartextMessages fromJson(JSONObject json){
         try {
             JSONArray jsonArray = json.getJSONArray(MESSAGES);
             List<MobyMessage> messages = new ArrayList<>();
             for(int i=0; i<json.length(); i++){
-                messages.add(MobyMessage.fromJSON(context, (String) jsonArray.get(i)));
+                messages.add(MobyMessage.fromJSON((String) jsonArray.get(i)));
             }
             return new CleartextMessages((ArrayList<MobyMessage>) messages);
         } catch (JSONException e) {

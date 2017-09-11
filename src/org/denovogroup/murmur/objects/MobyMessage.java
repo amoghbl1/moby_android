@@ -35,7 +35,7 @@ public class MobyMessage {
         this.payload     = payload;
     }
 
-    public static MobyMessage fromJSON(Context context, JSONObject json) {
+    public static MobyMessage fromJSON(JSONObject json) {
         return new MobyMessage(
                 json.optLong(TIMESTAMP, -1L),
                 json.optString(SOURCE, null),
@@ -44,7 +44,7 @@ public class MobyMessage {
         );
     }
 
-    public static MobyMessage fromJSON(Context context, String jsonString){
+    public static MobyMessage fromJSON(String jsonString){
         JSONObject json;
         try {
             json = new JSONObject(jsonString);
@@ -52,10 +52,10 @@ public class MobyMessage {
             e.printStackTrace();
             json = new JSONObject();
         }
-        return fromJSON(context, json);
+        return fromJSON(json);
     }
 
-    public JSONObject toJSON(Context context){
+    public JSONObject toJSON(){
         JSONObject result = new JSONObject();
         try {
             result.put(TIMESTAMP, this.timestamp);
