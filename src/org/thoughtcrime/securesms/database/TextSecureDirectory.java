@@ -177,7 +177,7 @@ public class TextSecureDirectory {
     db.replace(TABLE_NAME, null, values);
 
     FriendStore friendStore = FriendStore.getInstance(context);
-    if(!friendStore.hasFriend(token.getNumber())) {
+    if(!friendStore.sentHandshake(token.getNumber())) {
       ApplicationContext.getInstance(context)
               .getJobManager()
               .add(new SendHerdMessageJob(context, token.getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST));
@@ -203,7 +203,7 @@ public class TextSecureDirectory {
         db.replace(TABLE_NAME, null, values);
 
         FriendStore friendStore = FriendStore.getInstance(context);
-        if(!friendStore.hasFriend(token.getNumber())) {
+        if(!friendStore.sentHandshake(token.getNumber())) {
           ApplicationContext.getInstance(context)
                   .getJobManager()
                   .add(new SendHerdMessageJob(context, token.getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST));

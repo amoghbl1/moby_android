@@ -64,7 +64,7 @@ public class FriendStore extends SQLiteOpenHelper{
   public static final String QR_FRIENDING_SCHEME = "murmur://";
 
   /** Tag for Android log messages. */
-  private static final String LOG_TAG = "FriendStore";
+  private static final String TAG = "FriendStore";
 
 
     private static FriendStore instance;
@@ -119,7 +119,7 @@ public class FriendStore extends SQLiteOpenHelper{
     try {
       return Base64.decode(base64, Base64.NO_WRAP);
     } catch (IllegalArgumentException e) {
-      Log.e(LOG_TAG, "Returning null on attempt to decode badly formed base64 string: " + base64);
+      Log.e(TAG, "Returning null on attempt to decode badly formed base64 string: " + base64);
       return null;
     }
   }
@@ -158,9 +158,9 @@ public class FriendStore extends SQLiteOpenHelper{
       // This would be very strange, if only half the ID was stored.
       if (privateDeviceID != publicDeviceID) {
         if (privateDeviceID == null) {
-          Log.e(LOG_TAG, "Only one of private and public ID are stored! Public is stored, private is null.");
+          Log.e(TAG, "Only one of private and public ID are stored! Public is stored, private is null.");
         } else {
-          Log.e(LOG_TAG, "Only one of private and public ID are stored! Private is stored, public is null.");
+          Log.e(TAG, "Only one of private and public ID are stored! Private is stored, public is null.");
         }
       }
 
@@ -267,14 +267,23 @@ public class FriendStore extends SQLiteOpenHelper{
         SQLiteDatabase db = getWritableDatabase();
         if(db == null) return false;
 
-        String currentKey = getFriendKeyfromNumber(key);
+        String currentKey = getFriendKeyfromNumber(number);
 
-        if(currentKey != null || !currentKey.equals("")){
-            Log.e(LOG_TAG, "Contact was already in the store, data not changed");
-            return false;
-        } else if(hasFriend(number)) {
-            Log.e(LOG_TAG, "Contacts has generated a new key. Notify user?");
+        Log.d(TAG, number + "Trying to add key: " + key);
+        if(currentKey != null) {
+            if(currentKey.equals("") && !key.equals("")) {
+                Log.d(TAG, "Someone installed Moby :D");
+            } else if(!currentKey.equals("") && !key.equals("")){
+                Log.d(TAG, number + " has generated a new Moby key! Notify user?");
+                return false;
+            } else if(key.equals("")) {
+                Log.d(TAG, "Trying to overwrite a valid key! ");
+                return false;
+            }
         }
+
+        // TODO amoghbl1: Maybe we should make this an update if exists op?
+        deleteFriendWithNumber(number);
 
         ContentValues values = new ContentValues();
         values.put(COL_DISPLAY_NAME, Utils.makeTextSafeForSQL(name));
@@ -282,8 +291,8 @@ public class FriendStore extends SQLiteOpenHelper{
         values.put(COL_ADDED_VIA, via);
         values.put(COL_NUMBER, Utils.makeTextSafeForSQL(number.replaceAll("\\s","")));
 
-        db.insert(TABLE, null, values);
-        Log.d(LOG_TAG, "Friend Added to store");
+        long id = db.insert(TABLE, null, values);
+        Log.d(TAG, number + " Added to store, " + id + " key: " + key);
         return true;
     }
 
@@ -296,6 +305,28 @@ public class FriendStore extends SQLiteOpenHelper{
         Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_NUMBER + " = '" + number + "';", null);
 
         if(cursor.getCount() == 0) return false;
+
+        cursor.moveToFirst();
+        int keyColumn = cursor.getColumnIndex(COL_PUBLIC_KEY);
+        String key = cursor.getString(keyColumn);
+
+        Log.d(TAG, number + " hasKey: " + key);
+
+        if(key.equals("")) return false;
+
+        return true;
+    }
+
+    public boolean sentHandshake(String number) {
+        SQLiteDatabase db = getReadableDatabase();
+        if(db == null)
+            return false;
+
+        number = number.replaceAll("\\s", "");
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_NUMBER + " = '" + number + "';", null);
+
+        if(cursor.getCount() == 0)
+            return false;
 
         return true;
     }
@@ -318,6 +349,15 @@ public class FriendStore extends SQLiteOpenHelper{
         return  addFriend(name, bytesToBase64(key), via, number);
     }
 
+    public boolean deleteFriendWithNumber(String number){
+        SQLiteDatabase db = getWritableDatabase();
+        if(db == null) return false;
+
+        number = number.replaceAll("\\s","");
+        db.execSQL("DELETE FROM " + TABLE + " WHERE " + COL_NUMBER+ " = '" + number + "';");
+        return true;
+    }
+
     /**
      * Delete the given friend from the friend store, if it exists.
      *
@@ -330,7 +370,7 @@ public class FriendStore extends SQLiteOpenHelper{
         if(db == null) return false;
 
         if(getFriendWithKey(key) == null){
-            Log.d(LOG_TAG, "Friend was not in the store");
+            Log.d(TAG, "Friend was not in the store");
             return false;
         }
 

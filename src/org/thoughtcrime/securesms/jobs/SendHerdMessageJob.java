@@ -90,8 +90,12 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
         this.messageType = messageType;
 
         FriendStore friendStore = FriendStore.getInstance(context);
+
         // Adding Friend to FriendStore so that we don't keep spamming them :)
-        friendStore.addFriend(destination, "", FriendStore.ADDED_VIA_HERD_HANDSHAKE, destination);
+        // In case it's a request, if not, we'd overwrite the value!
+        if(this.messageType == TYPE_HANDSHAKE_REQUEST)
+            friendStore.addFriend(destination, "", FriendStore.ADDED_VIA_HERD_HANDSHAKE, destination);
+
         this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
                 .setPublicDevieID(friendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT))
                 .setMessageType(this.messageType).build();

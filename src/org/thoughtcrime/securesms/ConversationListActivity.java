@@ -47,6 +47,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.denovogroup.murmur.backend.AppConstants;
+import org.denovogroup.murmur.backend.FriendStore;
 import org.denovogroup.murmur.backend.MessageStore;
 import org.denovogroup.murmur.backend.MurmurService;
 import org.denovogroup.murmur.backend.SecurityManager;
@@ -244,6 +245,11 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
   private void deleteMessageStore() {
     MessageStore ms =  MessageStore.getInstance(getApplicationContext());
     ms.purgeStore();
+  }
+
+  private void deleteFriendStore() {
+    FriendStore fs = FriendStore.getInstance(getApplicationContext());
+    fs.purgeStore();
   }
 
   private void dumpMessageStoreToLog() {
