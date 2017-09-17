@@ -35,6 +35,16 @@ public final class HerdProtos {
      * <code>optional int32 messageType = 2;</code>
      */
     int getMessageType();
+
+    // optional bytes sharedSecret = 3;
+    /**
+     * <code>optional bytes sharedSecret = 3;</code>
+     */
+    boolean hasSharedSecret();
+    /**
+     * <code>optional bytes sharedSecret = 3;</code>
+     */
+    com.google.protobuf.ByteString getSharedSecret();
   }
   /**
    * Protobuf type {@code HandshakeMessage}
@@ -95,6 +105,11 @@ public final class HerdProtos {
             case 16: {
               bitField0_ |= 0x00000002;
               messageType_ = input.readInt32();
+              break;
+            }
+            case 26: {
+              bitField0_ |= 0x00000004;
+              sharedSecret_ = input.readBytes();
               break;
             }
           }
@@ -196,9 +211,26 @@ public final class HerdProtos {
       return messageType_;
     }
 
+    // optional bytes sharedSecret = 3;
+    public static final int SHAREDSECRET_FIELD_NUMBER = 3;
+    private com.google.protobuf.ByteString sharedSecret_;
+    /**
+     * <code>optional bytes sharedSecret = 3;</code>
+     */
+    public boolean hasSharedSecret() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional bytes sharedSecret = 3;</code>
+     */
+    public com.google.protobuf.ByteString getSharedSecret() {
+      return sharedSecret_;
+    }
+
     private void initFields() {
       publicDevieID_ = "";
       messageType_ = 0;
+      sharedSecret_ = com.google.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -218,6 +250,9 @@ public final class HerdProtos {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeInt32(2, messageType_);
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, sharedSecret_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -234,6 +269,10 @@ public final class HerdProtos {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt32Size(2, messageType_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(3, sharedSecret_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -355,6 +394,8 @@ public final class HerdProtos {
         bitField0_ = (bitField0_ & ~0x00000001);
         messageType_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
+        sharedSecret_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -391,6 +432,10 @@ public final class HerdProtos {
           to_bitField0_ |= 0x00000002;
         }
         result.messageType_ = messageType_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.sharedSecret_ = sharedSecret_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -414,6 +459,9 @@ public final class HerdProtos {
         }
         if (other.hasMessageType()) {
           setMessageType(other.getMessageType());
+        }
+        if (other.hasSharedSecret()) {
+          setSharedSecret(other.getSharedSecret());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -545,6 +593,42 @@ public final class HerdProtos {
       public Builder clearMessageType() {
         bitField0_ = (bitField0_ & ~0x00000002);
         messageType_ = 0;
+        onChanged();
+        return this;
+      }
+
+      // optional bytes sharedSecret = 3;
+      private com.google.protobuf.ByteString sharedSecret_ = com.google.protobuf.ByteString.EMPTY;
+      /**
+       * <code>optional bytes sharedSecret = 3;</code>
+       */
+      public boolean hasSharedSecret() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional bytes sharedSecret = 3;</code>
+       */
+      public com.google.protobuf.ByteString getSharedSecret() {
+        return sharedSecret_;
+      }
+      /**
+       * <code>optional bytes sharedSecret = 3;</code>
+       */
+      public Builder setSharedSecret(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        sharedSecret_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bytes sharedSecret = 3;</code>
+       */
+      public Builder clearSharedSecret() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        sharedSecret_ = getDefaultInstance().getSharedSecret();
         onChanged();
         return this;
       }
@@ -1206,11 +1290,11 @@ public final class HerdProtos {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\nHerd.proto\">\n\020HandshakeMessage\022\025\n\rpubl" +
-      "icDevieID\030\001 \001(\t\022\023\n\013messageType\030\002 \001(\005\"2\n\n" +
-      "HerdPacket\022\023\n\013destination\030\001 \001(\t\022\017\n\007paylo" +
-      "ad\030\002 \001(\tB,\n\036org.denovogroup.murmur.objec" +
-      "tsB\nHerdProtos"
+      "\n\nHerd.proto\"T\n\020HandshakeMessage\022\025\n\rpubl" +
+      "icDevieID\030\001 \001(\t\022\023\n\013messageType\030\002 \001(\005\022\024\n\014" +
+      "sharedSecret\030\003 \001(\014\"2\n\nHerdPacket\022\023\n\013dest" +
+      "ination\030\001 \001(\t\022\017\n\007payload\030\002 \001(\tB,\n\036org.de" +
+      "novogroup.murmur.objectsB\nHerdProtos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1222,7 +1306,7 @@ public final class HerdProtos {
           internal_static_HandshakeMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_HandshakeMessage_descriptor,
-              new java.lang.String[] { "PublicDevieID", "MessageType", });
+              new java.lang.String[] { "PublicDevieID", "MessageType", "SharedSecret", });
           internal_static_HerdPacket_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_HerdPacket_fieldAccessorTable = new

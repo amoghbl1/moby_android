@@ -219,6 +219,8 @@ public class MurmurService extends Service {
     public static int direction = 0;
     public static String remoteAddress;
 
+    private final static boolean clean = false;
+
     /**
      * Called whenever the service is requested to start. If the service is
      * already running, this does /not/ create a new instance of the service.
@@ -264,6 +266,7 @@ public class MurmurService extends Service {
         mMessageStore           = MessageStore.getInstance(this);
         mWifiDirectSpeaker      = WifiDirectSpeaker.getInstance();
         mStorageBase            = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
+        mExchangeHistoryTracker = ExchangeHistoryTracker.getInstance(this);
 
 
         if (errorHandler != null) {
@@ -272,6 +275,11 @@ public class MurmurService extends Service {
             filter.addAction(ACTION_ONBT);
             filter.addAction(ACTION_ONWIFI);
             registerReceiver(errorHandler, filter);
+        }
+
+        if(clean) {
+            mFriendStore.purgeStore();
+            mMessageStore.purgeStore();
         }
 
         Log.i(TAG, "MurmurService onCreate.");
@@ -599,7 +607,7 @@ public class MurmurService extends Service {
      */
     /* package */ ExchangeCallback mExchangeCallback = new ExchangeCallback() {
 
-        private void handleMessage(MobyMessage m) {
+        private void handleMessage(MobyMessage m, String sender) {
             // TODO amoghbl1: Figure out if we need to decrypt inside a Job or not.
             String encodedMessage = m.getPayload();
             byte[] decodedContent = null;
@@ -610,7 +618,7 @@ public class MurmurService extends Service {
             }
 
             // NOTE: This is going to break for multi device encryption :)
-            SignalServiceEnvelope envelope = new SignalServiceEnvelope(SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE, m.getSource(),
+            SignalServiceEnvelope envelope = new SignalServiceEnvelope(SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE, sender,
                     SignalServiceAddress.DEFAULT_DEVICE_ID, "",
                     m.getTimestamp(), null,
                     decodedContent);
@@ -621,7 +629,6 @@ public class MurmurService extends Service {
 
         @Override
         public void success(Exchange exchange) {
-            Context context = getApplicationContext();
             mServiceWatchDog.notifyLastExchange();
             boolean hasNew = false;
             List<MobyMessage> newMessages = exchange.getReceivedMessages();
@@ -638,10 +645,10 @@ public class MurmurService extends Service {
                 } else {
                     hasNew = true;
 
-                    String ourIdentity = mFriendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT);
-                    Log.d(TAG, "Destination: " + message.getDestination() + "\n us: " + ourIdentity);
-                    if (message.getDestination().equals(ourIdentity))
-                        handleMessage(message);
+                    Log.d(TAG, "MobyTag: " + message.getMobyTag());
+                    String sender = mFriendStore.verifyMobyTag(message.getMobyTag(), message.getPayload());
+                    if(sender != null)
+                        handleMessage(message, sender);
 
                     mMessageStore.addMessage(message);
                 }

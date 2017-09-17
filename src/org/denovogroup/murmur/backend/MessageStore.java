@@ -67,8 +67,7 @@ public class MessageStore extends SQLiteOpenHelper {
 
 
     public static final String COL_TIMESTAMP   = "timestamp";
-    public static final String COL_SOURCE      = "source";
-    public static final String COL_DESTINATION = "destination";
+    public static final String COL_MOBY_TAG    = "moby_tag";
     public static final String COL_PAYLOAD     = "payload";
 
     private Context mContext;
@@ -98,8 +97,7 @@ public class MessageStore extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE + " ("
                 + COL_TIMESTAMP   + " INTEGER NOT NULL,"
-                + COL_SOURCE      + " VARCHAR(255) NOT NULL,"
-                + COL_DESTINATION + " VARCHAR(255) NOT NULL,"
+                + COL_MOBY_TAG    + " VARCHAR(300) NOT NULL,"
                 + COL_PAYLOAD     + " VARCHAR(" + MAX_MESSAGE_SIZE + ") NOT NULL"
                 + ");");
     }
@@ -128,15 +126,13 @@ public class MessageStore extends SQLiteOpenHelper {
         cursor.moveToFirst();
 
         int timestampColumn   = cursor.getColumnIndex(COL_TIMESTAMP);
-        int sourceColumn      = cursor.getColumnIndex(COL_SOURCE);
-        int destinationColumn = cursor.getColumnIndex(COL_DESTINATION);
+        int mobyTagColumn     = cursor.getColumnIndex(COL_MOBY_TAG);
         int payloadColumn     = cursor.getColumnIndex(COL_PAYLOAD);
         if (cursor.getCount() > 0) {
             while (!cursor.isAfterLast()){
                 messages.add(new MobyMessage(
                         cursor.getLong(timestampColumn),
-                        cursor.getString(sourceColumn),
-                        cursor.getString(destinationColumn),
+                        cursor.getString(mobyTagColumn),
                         cursor.getString(payloadColumn)
                 ));
                 cursor.moveToNext();
@@ -198,13 +194,12 @@ public class MessageStore extends SQLiteOpenHelper {
      * @param timestamp The timestamp of the
      * @return Returns true if the message was added. If message already exists, update its values
      */
-    public boolean addMessage(long timestamp, String source, String destination, String payload) {
+    public boolean addMessage(long timestamp, String mobyTag, String payload) {
         SQLiteDatabase db = getWritableDatabase();
-        if(db != null && timestamp != -1L && source != null && destination != null && payload != null){
+        if(db != null && timestamp != -1L && mobyTag != null && payload != null){
             ContentValues contentValues = new ContentValues();
             contentValues.put(MobyMessage.TIMESTAMP, timestamp);
-            contentValues.put(MobyMessage.SOURCE, source);
-            contentValues.put(MobyMessage.DESTINATION, destination);
+            contentValues.put(MobyMessage.MOBYTAG, mobyTag);
             contentValues.put(MobyMessage.PAYLOAD, payload);
             db.insert(TABLE, null, contentValues);
             return true;
@@ -215,8 +210,7 @@ public class MessageStore extends SQLiteOpenHelper {
 
     public boolean addMessage(MobyMessage message) {
         return addMessage(message.getTimestamp(),
-                message.getSource(),
-                message.getDestination(),
+                message.getMobyTag(),
                 message.getPayload());
     }
 
@@ -248,15 +242,13 @@ public class MessageStore extends SQLiteOpenHelper {
             cursor.moveToFirst();
 
             int timestampColumn   = cursor.getColumnIndex(COL_TIMESTAMP);
-            int sourceColumn      = cursor.getColumnIndex(COL_SOURCE);
-            int destinationColumn = cursor.getColumnIndex(COL_DESTINATION);
+            int mobyTagColumn     = cursor.getColumnIndex(COL_MOBY_TAG);
             int payloadColumn     = cursor.getColumnIndex(COL_PAYLOAD);
 
             while (!cursor.isAfterLast()) {
                 Log.d(TAG,
                         "timestamp: "    + cursor.getLong(timestampColumn) +
-                        " source: "      + cursor.getString(sourceColumn) +
-                        " destination: " + cursor.getString(destinationColumn) +
+                        " source: "      + cursor.getString(mobyTagColumn) +
                         " payload: "     + cursor.getString(payloadColumn));
                 cursor.moveToNext();
             }

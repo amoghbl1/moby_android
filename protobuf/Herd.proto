@@ -6,6 +6,7 @@ option java_package = "org.denovogroup.murmur.objects";
 message HandshakeMessage {
     optional string publicDevieID = 1;
     optional int32  messageType   = 2;
+    optional bytes  sharedSecret  = 3;
 }
 
 message HerdPacket {

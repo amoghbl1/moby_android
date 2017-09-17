@@ -40,9 +40,14 @@ import android.util.Log;
 
 import org.spongycastle.crypto.AsymmetricCipherKeyPair;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Storage for friends that uses StorageBase underneath.
@@ -61,7 +66,7 @@ public class FriendStore extends SQLiteOpenHelper{
   private static final String DEVICE_PRIVATE_ID_KEY = "PrivateDeviceIDKey";
 
   /** URI scheme for Murmur friending. */
-  public static final String QR_FRIENDING_SCHEME = "murmur://";
+  public static final String QR_FRIENDING_SCHEME = "moby://";
 
   /** Tag for Android log messages. */
   private static final String TAG = "FriendStore";
@@ -73,11 +78,10 @@ public class FriendStore extends SQLiteOpenHelper{
     private static final int DATABASE_VERSION = 2;
     private static final String TABLE = "Friends";
     private static final String COL_ROWID = "_id";
-    public static final String COL_DISPLAY_NAME = "name";
-    public static final String COL_PUBLIC_KEY = "key";
+    public static final String COL_MOBY_ID = "moby_id";
+    public static final String COL_MOBY_SHARED_SECRET = "moby_shared_secret";
     public static final String COL_ADDED_VIA = "added_via";
     public static final String COL_NUMBER = "number";
-    public static final String COL_CHECKED = "checked";
 
     public static final int ADDED_VIA_QR = 0;
     public static final int ADDED_VIA_PHONE = 1;
@@ -231,11 +235,10 @@ public class FriendStore extends SQLiteOpenHelper{
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE + " ("
                 + COL_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COL_DISPLAY_NAME + " TEXT NOT NULL,"
                 + COL_ADDED_VIA + " INT NOT NULL,"
-                + COL_PUBLIC_KEY + " TEXT NOT NULL,"
-                + COL_NUMBER + " TEXT,"
-                + COL_CHECKED + " BOOLEAN DEFAULT " + FALSE + " NOT NULL CHECK(" + COL_CHECKED + " IN(" + TRUE + "," + FALSE + "))"
+                + COL_MOBY_ID + " TEXT NOT NULL,"
+                + COL_MOBY_SHARED_SECRET + " DATA BLOB,"
+                + COL_NUMBER + " TEXT"
                 + ");");
     }
 
@@ -255,29 +258,29 @@ public class FriendStore extends SQLiteOpenHelper{
     /**
      * Adds the given friend.
      *
-     * @param name a display name for the entry
-     * @param key the public key the friend is identified by in exchanges
+     * @param mobyID the public key the friend is identified by in exchanges
      * @param via how the friend's key was retrieved (either ADDED_VIA_PHONE or ADDED_VIA_QR)
      * @param number optional real phone number to display when user is in edit mode
+     * @param sharedSecret the shared secret that is used as a moby tag key for HmacSHA256
      *
      * @return Returns true if the friend was stored, false if the friend was already
      * stored.
      */
-    public boolean addFriend(String name, String key, int via, String number){
+    public boolean addFriend(String mobyID, int via, String number, byte[] sharedSecret){
         SQLiteDatabase db = getWritableDatabase();
         if(db == null) return false;
 
-        String currentKey = getFriendKeyfromNumber(number);
+        String currentMobyID = getFriendMobyIDfromNumber(number);
 
-        Log.d(TAG, number + "Trying to add key: " + key);
-        if(currentKey != null) {
-            if(currentKey.equals("") && !key.equals("")) {
+        if(currentMobyID != null) {
+            if(currentMobyID.equals("") && !mobyID.equals("")) {
                 Log.d(TAG, "Someone installed Moby :D");
-            } else if(!currentKey.equals("") && !key.equals("")){
+            } else if(!currentMobyID.equals("") && !mobyID.equals("")){
+                // TODO amoghbl1: figure out what to do when overwritten with new vals.
                 Log.d(TAG, number + " has generated a new Moby key! Notify user?");
-                return false;
-            } else if(key.equals("")) {
-                Log.d(TAG, "Trying to overwrite a valid key! ");
+
+            } else if(mobyID.equals("")) {
+                Log.d(TAG, "Overwriting a valid MobyID! ");
                 return false;
             }
         }
@@ -286,16 +289,59 @@ public class FriendStore extends SQLiteOpenHelper{
         deleteFriendWithNumber(number);
 
         ContentValues values = new ContentValues();
-        values.put(COL_DISPLAY_NAME, Utils.makeTextSafeForSQL(name));
-        values.put(COL_PUBLIC_KEY, key);
+        values.put(COL_MOBY_ID, mobyID);
         values.put(COL_ADDED_VIA, via);
         values.put(COL_NUMBER, Utils.makeTextSafeForSQL(number.replaceAll("\\s","")));
+        values.put(COL_MOBY_SHARED_SECRET, sharedSecret);
 
         long id = db.insert(TABLE, null, values);
-        Log.d(TAG, number + " Added to store, " + id + " key: " + key);
+        Log.d(TAG, number + " Added to store, " + id + " mobyID: " + mobyID + " mobyTagKey: " + sharedSecret);
         return true;
     }
 
+
+    public String generateMobyTag(String mobileNumber, String payload) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            byte[] macKey = getFriendMobyTagKeyfromNumber(mobileNumber);
+            SecretKeySpec secretKeySpec = new SecretKeySpec(macKey, "HmacSHA256");
+            mac.init(secretKeySpec);
+            return Base64.encodeToString(mac.doFinal(base64ToBytes(payload)), Base64.NO_WRAP);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            Log.d(TAG, e.getMessage());
+        }
+
+        return null;
+    }
+
+    public String verifyMobyTag(String tag, String payload) {
+        SQLiteDatabase db = getWritableDatabase();
+        if(db == null) return null;
+
+        Cursor c = db.rawQuery("SELECT * FROM " + TABLE + ";", null);
+        int mobyKeyColumn = c.getColumnIndex(COL_MOBY_SHARED_SECRET);
+        int numberColumn  = c.getColumnIndex(COL_NUMBER);
+
+        c.moveToFirst();
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec;
+            String ourTag;
+            while(!c.isAfterLast()) {
+                secretKeySpec = new SecretKeySpec(c.getBlob(mobyKeyColumn), "HmacSHA256");
+                mac.init(secretKeySpec);
+                ourTag = Base64.encodeToString(mac.doFinal(base64ToBytes(payload)), Base64.NO_WRAP);
+                Log.d(TAG, "Our: " + ourTag);
+                Log.d(TAG, "Thr: " + tag);
+                if(ourTag.equals(tag))
+                    return c.getString(numberColumn);
+                c.moveToNext();
+            }
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            Log.d(TAG, e.getMessage());
+        }
+        return null;
+    }
 
     public boolean hasFriend(String number){
         SQLiteDatabase db = getWritableDatabase();
@@ -307,8 +353,8 @@ public class FriendStore extends SQLiteOpenHelper{
         if(cursor.getCount() == 0) return false;
 
         cursor.moveToFirst();
-        int keyColumn = cursor.getColumnIndex(COL_PUBLIC_KEY);
-        String key = cursor.getString(keyColumn);
+        int mobyIDColumn = cursor.getColumnIndex(COL_MOBY_ID);
+        String key = cursor.getString(mobyIDColumn);
 
         Log.d(TAG, number + " hasKey: " + key);
 
@@ -331,23 +377,6 @@ public class FriendStore extends SQLiteOpenHelper{
         return true;
     }
 
-    /**
-     * Add the given bytes as a friend, converting them to base64 and storing them
-     * in the FriendStore.
-     *
-     * @param name a display name for the entry
-     * @param key the public key the friend is identified by in exchanges
-     * @param via how the friend's key was retrieved (either ADDED_VIA_PHONE or ADDED_VIA_QR)
-     * @param number optional real phone number to display when user is in edit mode
-     * @return True if the friend was added, false if not since it was already there.
-     */
-    public boolean addFriendBytes(String name, byte[] key, int via, String number){
-        if(key == null){
-            throw new IllegalArgumentException("Null friend added through addFriendBytes()");
-        }
-
-        return  addFriend(name, bytesToBase64(key), via, number);
-    }
 
     public boolean deleteFriendWithNumber(String number){
         SQLiteDatabase db = getWritableDatabase();
@@ -361,38 +390,21 @@ public class FriendStore extends SQLiteOpenHelper{
     /**
      * Delete the given friend from the friend store, if it exists.
      *
-     * @param key The friend public ID to delete.
+     * @param mobyID The friend public ID to delete.
      *
      * @return True if the friend existed and was deleted, false otherwise.
      */
-    public boolean deleteFriend(String key){
+    public boolean deleteFriend(String mobyID){
         SQLiteDatabase db = getWritableDatabase();
         if(db == null) return false;
 
-        if(getFriendWithKey(key) == null){
+        if(getFriendWithMobyID(mobyID) == null){
             Log.d(TAG, "Friend was not in the store");
             return false;
         }
 
-        db.execSQL("DELETE FROM " + TABLE + " WHERE " + COL_PUBLIC_KEY + " = '" + key + "';");
+        db.execSQL("DELETE FROM " + TABLE + " WHERE " + COL_MOBY_ID + " = '" + mobyID + "';");
         return true;
-    }
-
-    /**
-     * Delete the given bytes as a friend.
-     *
-     * @param key The friend public id key to be deleted.
-     * @return True if the friend was deleted, false if they weren't in the store.
-     */
-    public boolean deleteFriendBytes(byte[] key){
-        SQLiteDatabase db = getWritableDatabase();
-        if(db == null) return false;
-
-        if(key == null){
-            throw new IllegalArgumentException("Null friend deleted through addFriendBytes()");
-        }
-
-        return deleteFriend(bytesToBase64(key));
     }
 
     /**
@@ -406,11 +418,11 @@ public class FriendStore extends SQLiteOpenHelper{
         SQLiteDatabase db = getWritableDatabase();
         if(db == null) return friends;
 
-        Cursor cursor = db.rawQuery("SELECT " + COL_PUBLIC_KEY + " FROM " + TABLE + ";", null);
+        Cursor cursor = db.rawQuery("SELECT " + COL_MOBY_ID + " FROM " + TABLE + ";", null);
 
         cursor.moveToFirst();
 
-        int keyColIndex = cursor.getColumnIndex(COL_PUBLIC_KEY);
+        int keyColIndex = cursor.getColumnIndex(COL_MOBY_ID);
         String key = "";
 
         while (!cursor.isAfterLast()){
@@ -422,119 +434,48 @@ public class FriendStore extends SQLiteOpenHelper{
         return friends;
     }
 
-    public Cursor getFriendsCursor(String query){
-        SQLiteDatabase db = getWritableDatabase();
-        if(db == null) return null;
-
-        if(query == null || query.length() == 0){
-            return db.rawQuery("SELECT * FROM "+TABLE+" ORDER BY "+COL_DISPLAY_NAME+" COLLATE NOCASE ASC;",null);
-        } else {
-            query = Utils.makeTextSafeForSQL(query);
-
-            String likeQuery ="";
-
-            query = query.replaceAll("[\n\"]", " ");
-
-            String[] words = query.split("\\s");
-
-            for(int i=0; i<words.length; i++){
-                if(words[i].length() > 0) {
-                    if (likeQuery.length() > 0) {
-                        likeQuery += " OR ";
-                    }
-                    likeQuery += " " + COL_DISPLAY_NAME + " LIKE '%" + words[i] + "%' ";
-                }
-            }
-
-            return db.rawQuery("SELECT * FROM "+TABLE+" WHERE ("+likeQuery+") ORDER BY "+COL_DISPLAY_NAME+" COLLATE NOCASE ASC;",null);
-        }
-    }
-
-    private Cursor getFriendWithKey(String key) {
+    private Cursor getFriendWithMobyID(String key) {
         SQLiteDatabase db = getWritableDatabase();
         if(db == null)
             return null;
 
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_PUBLIC_KEY + " = '" + key + "';", null);
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_MOBY_ID + " = '" + key + "';", null);
 
         if(cursor.getCount() == 0) return null;
 
         return cursor;
     }
 
-    public String getFriendKeyfromNumber(String number) {
+    private byte[] getFriendMobyTagKeyfromNumber(String number) {
         SQLiteDatabase db = getReadableDatabase();
         if(db == null)
             return null;
 
-        Cursor c = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_DISPLAY_NAME + " = '" + number + "';", null);
+        Cursor c = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_NUMBER + " = '" + number +"';", null);
+        c.moveToFirst();
+
+        if(c.getCount() == 0)
+            return null;
+        int keyColumn = c.getColumnIndex(COL_MOBY_SHARED_SECRET);
+
+        return c.getBlob(keyColumn);
+    }
+
+    public String getFriendMobyIDfromNumber(String number) {
+        SQLiteDatabase db = getReadableDatabase();
+        if(db == null)
+            return null;
+
+        Cursor c = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_NUMBER + " = '" + number + "';", null);
 
         c.moveToFirst();
 
-        int keyColumn = c.getColumnIndex(COL_PUBLIC_KEY);
+        int keyColumn = c.getColumnIndex(COL_MOBY_ID);
 
         if(c.getCount() == 0)
             return null;
 
         return c.getString(keyColumn);
-    }
-
-    /** edit a friend entry with specified key
-     *
-     * @param key the public id key of the friend to be edited
-     * @param name new name value
-     * @param number new number value or null
-     * @return true if the friend was edited or false if friend could not be edited
-     */
-    public boolean editFriend(String key, String name, String number){
-        SQLiteDatabase db = getWritableDatabase();
-        if(db == null) return false;
-
-        db.execSQL("UPDATE "+TABLE+" SET "+COL_DISPLAY_NAME+"='"+Utils.makeTextSafeForSQL(name)+"',"+COL_NUMBER+"='"+Utils.makeTextSafeForSQL(number)+"' WHERE "+COL_PUBLIC_KEY+"='"+key+"';");
-        return true;
-    }
-
-    /** edit a friend entry checked state
-     * @param key the public id key of the friend to be edited
-     * @param isChecked the new checked state
-     */
-    public void setChecked(String key, boolean isChecked){
-        SQLiteDatabase db = getWritableDatabase();
-        if(db == null) return;
-
-        int checked = isChecked ? TRUE : FALSE;
-        db.execSQL("UPDATE "+TABLE+" SET "+COL_CHECKED+"="+checked+" WHERE "+COL_PUBLIC_KEY+"='"+key+"';");
-    }
-
-    /** set the checked state for all friends entry */
-    public void setCheckedAll(boolean isChecked, String query) {
-        SQLiteDatabase db = getWritableDatabase();
-        if (db == null) return;
-
-        int checked = isChecked ? TRUE : FALSE;
-        if (!isChecked || query == null || query.length() == 0) {
-            db.execSQL("UPDATE " + TABLE + " SET " + COL_CHECKED + "=" + checked + ";");
-        } else {
-            query = Utils.makeTextSafeForSQL(query);
-            String likeQuery = "";
-            query = query.replaceAll("[\n\"]", " ");
-            String[] words = query.split("\\s");
-            for (int i = 0; i < words.length; i++) {
-                if (words[i].length() > 0) {
-                    if (likeQuery.length() > 0) {
-                        likeQuery += " OR ";
-                    }
-                    likeQuery += " " + COL_DISPLAY_NAME + " LIKE '%" + words[i] + "%' ";
-                }
-            }
-            db.execSQL("UPDATE " + TABLE + " SET " + COL_CHECKED + "=" + checked + " WHERE " + likeQuery + ";");
-        }
-    }
-    public void deleteChecked(){
-        SQLiteDatabase db = getWritableDatabase();
-        if(db == null) return;
-
-        db.execSQL("DELETE FROM "+TABLE+" WHERE "+COL_CHECKED+"="+TRUE+";");
     }
 
     public void purgeStore(){
@@ -545,12 +486,4 @@ public class FriendStore extends SQLiteOpenHelper{
         }
     }
 
-    public long getCheckedCount(){
-        SQLiteDatabase db = getReadableDatabase();
-        if(db != null){
-            Cursor c = db.rawQuery("SELECT * FROM "+TABLE+" WHERE "+COL_CHECKED+"="+TRUE+";", null);
-            if(c != null) return c.getCount();
-        }
-        return 0;
-    }
 }

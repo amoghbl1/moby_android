@@ -235,7 +235,7 @@ public class Exchange implements Runnable {
       // get messages to send
       List<MobyMessage> messages = getMessages(0);
       //notify the recipient how many items we expect to send him.
-      MobyMessage exchangeInfoMessage = new MobyMessage(-1L, "ExchangeAgreement", Integer.toString(messages.size()), null);
+      MobyMessage exchangeInfoMessage = new MobyMessage(-1L, "ExchangeAgreement", Integer.toString(messages.size()));
       if(lengthValueWrite(out, exchangeInfoMessage.toJSON())) {
           // Send messages
          for(MobyMessage message : messages){
