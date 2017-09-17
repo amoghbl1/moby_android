@@ -318,7 +318,7 @@ public class FriendStore extends SQLiteOpenHelper{
         SQLiteDatabase db = getWritableDatabase();
         if(db == null) return null;
 
-        Cursor c = db.rawQuery("SELECT * FROM " + TABLE + ";", null);
+        Cursor c = db.rawQuery("SELECT * FROM " + TABLE + " WHERE " + COL_MOBY_ID + " != '';", null);
         int mobyKeyColumn = c.getColumnIndex(COL_MOBY_SHARED_SECRET);
         int numberColumn  = c.getColumnIndex(COL_NUMBER);
 
