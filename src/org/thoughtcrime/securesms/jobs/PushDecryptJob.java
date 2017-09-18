@@ -180,12 +180,31 @@ public class PushDecryptJob extends ContextJob {
 
         // TODO amoghbl1: Add logic to handle trust of a number that tries to do a handshake.
         if(herdMessage.hasMessageType()) {
-          if(herdMessage.getMessageType() == SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST) {
-            ApplicationContext.getInstance(context)
-                    .getJobManager()
-                    .add(new SendHerdMessageJob(context, envelope.getSource(), SendHerdMessageJob.TYPE_HANDSHAKE_RESPONSE, herdMessage.getPublicDevieID()));
-          } else {
-            friendStore.addFriend(herdMessage.getPublicDevieID(), FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource(), herdMessage.getSharedSecret().toByteArray());
+          int type = herdMessage.getMessageType();
+          switch (type){
+            case SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST:
+              ApplicationContext.getInstance(context)
+                      .getJobManager()
+                      .add(new SendHerdMessageJob(context, envelope.getSource(), SendHerdMessageJob.TYPE_HANDSHAKE_RESPONSE, herdMessage.getPublicDevieID()));
+              break;
+            case SendHerdMessageJob.TYPE_HANDSHAKE_RESPONSE:
+              friendStore.addFriend(herdMessage.getPublicDevieID(), FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource(), herdMessage.getSharedSecret().toByteArray());
+              break;
+            // We let the send herd message job do PSI.
+            case SendHerdMessageJob.TYPE_PSI_SYN:
+              SendHerdMessageJob.handleSYN(context, herdMessage, envelope.getSource());
+              break;
+            case SendHerdMessageJob.TYPE_PSI_SYN_ACK:
+              ApplicationContext.getInstance(context)
+                      .getJobManager()
+                      .add(new SendHerdMessageJob(context, envelope.getSource(), SendHerdMessageJob.TYPE_PSI_ACK));
+            case SendHerdMessageJob.TYPE_PSI_ACK:
+              ApplicationContext.getInstance(context)
+                      .getJobManager()
+                      .add(new SendHerdMessageJob(context, envelope.getSource(), SendHerdMessageJob.TYPE_PSI_ACK_END));
+              break;
+            default:
+              Log.d(TAG, "Herd message with invalid message type: " + type);
           }
         }
         return;

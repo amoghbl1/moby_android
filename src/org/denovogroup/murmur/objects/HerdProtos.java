@@ -45,6 +45,34 @@ public final class HerdProtos {
      * <code>optional bytes sharedSecret = 3;</code>
      */
     com.google.protobuf.ByteString getSharedSecret();
+
+    // optional .ClientMessage clientMessage = 4;
+    /**
+     * <code>optional .ClientMessage clientMessage = 4;</code>
+     */
+    boolean hasClientMessage();
+    /**
+     * <code>optional .ClientMessage clientMessage = 4;</code>
+     */
+    org.denovogroup.murmur.objects.HerdProtos.ClientMessage getClientMessage();
+    /**
+     * <code>optional .ClientMessage clientMessage = 4;</code>
+     */
+    org.denovogroup.murmur.objects.HerdProtos.ClientMessageOrBuilder getClientMessageOrBuilder();
+
+    // optional .ServerMessage serverMessage = 5;
+    /**
+     * <code>optional .ServerMessage serverMessage = 5;</code>
+     */
+    boolean hasServerMessage();
+    /**
+     * <code>optional .ServerMessage serverMessage = 5;</code>
+     */
+    org.denovogroup.murmur.objects.HerdProtos.ServerMessage getServerMessage();
+    /**
+     * <code>optional .ServerMessage serverMessage = 5;</code>
+     */
+    org.denovogroup.murmur.objects.HerdProtos.ServerMessageOrBuilder getServerMessageOrBuilder();
   }
   /**
    * Protobuf type {@code HandshakeMessage}
@@ -110,6 +138,32 @@ public final class HerdProtos {
             case 26: {
               bitField0_ |= 0x00000004;
               sharedSecret_ = input.readBytes();
+              break;
+            }
+            case 34: {
+              org.denovogroup.murmur.objects.HerdProtos.ClientMessage.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000008) == 0x00000008)) {
+                subBuilder = clientMessage_.toBuilder();
+              }
+              clientMessage_ = input.readMessage(org.denovogroup.murmur.objects.HerdProtos.ClientMessage.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(clientMessage_);
+                clientMessage_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000008;
+              break;
+            }
+            case 42: {
+              org.denovogroup.murmur.objects.HerdProtos.ServerMessage.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000010) == 0x00000010)) {
+                subBuilder = serverMessage_.toBuilder();
+              }
+              serverMessage_ = input.readMessage(org.denovogroup.murmur.objects.HerdProtos.ServerMessage.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(serverMessage_);
+                serverMessage_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000010;
               break;
             }
           }
@@ -227,10 +281,56 @@ public final class HerdProtos {
       return sharedSecret_;
     }
 
+    // optional .ClientMessage clientMessage = 4;
+    public static final int CLIENTMESSAGE_FIELD_NUMBER = 4;
+    private org.denovogroup.murmur.objects.HerdProtos.ClientMessage clientMessage_;
+    /**
+     * <code>optional .ClientMessage clientMessage = 4;</code>
+     */
+    public boolean hasClientMessage() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>optional .ClientMessage clientMessage = 4;</code>
+     */
+    public org.denovogroup.murmur.objects.HerdProtos.ClientMessage getClientMessage() {
+      return clientMessage_;
+    }
+    /**
+     * <code>optional .ClientMessage clientMessage = 4;</code>
+     */
+    public org.denovogroup.murmur.objects.HerdProtos.ClientMessageOrBuilder getClientMessageOrBuilder() {
+      return clientMessage_;
+    }
+
+    // optional .ServerMessage serverMessage = 5;
+    public static final int SERVERMESSAGE_FIELD_NUMBER = 5;
+    private org.denovogroup.murmur.objects.HerdProtos.ServerMessage serverMessage_;
+    /**
+     * <code>optional .ServerMessage serverMessage = 5;</code>
+     */
+    public boolean hasServerMessage() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>optional .ServerMessage serverMessage = 5;</code>
+     */
+    public org.denovogroup.murmur.objects.HerdProtos.ServerMessage getServerMessage() {
+      return serverMessage_;
+    }
+    /**
+     * <code>optional .ServerMessage serverMessage = 5;</code>
+     */
+    public org.denovogroup.murmur.objects.HerdProtos.ServerMessageOrBuilder getServerMessageOrBuilder() {
+      return serverMessage_;
+    }
+
     private void initFields() {
       publicDevieID_ = "";
       messageType_ = 0;
       sharedSecret_ = com.google.protobuf.ByteString.EMPTY;
+      clientMessage_ = org.denovogroup.murmur.objects.HerdProtos.ClientMessage.getDefaultInstance();
+      serverMessage_ = org.denovogroup.murmur.objects.HerdProtos.ServerMessage.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -253,6 +353,12 @@ public final class HerdProtos {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeBytes(3, sharedSecret_);
       }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeMessage(4, clientMessage_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeMessage(5, serverMessage_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -273,6 +379,14 @@ public final class HerdProtos {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(3, sharedSecret_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(4, clientMessage_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(5, serverMessage_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -382,6 +496,8 @@ public final class HerdProtos {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getClientMessageFieldBuilder();
+          getServerMessageFieldBuilder();
         }
       }
       private static Builder create() {
@@ -396,6 +512,18 @@ public final class HerdProtos {
         bitField0_ = (bitField0_ & ~0x00000002);
         sharedSecret_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000004);
+        if (clientMessageBuilder_ == null) {
+          clientMessage_ = org.denovogroup.murmur.objects.HerdProtos.ClientMessage.getDefaultInstance();
+        } else {
+          clientMessageBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000008);
+        if (serverMessageBuilder_ == null) {
+          serverMessage_ = org.denovogroup.murmur.objects.HerdProtos.ServerMessage.getDefaultInstance();
+        } else {
+          serverMessageBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -436,6 +564,22 @@ public final class HerdProtos {
           to_bitField0_ |= 0x00000004;
         }
         result.sharedSecret_ = sharedSecret_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        if (clientMessageBuilder_ == null) {
+          result.clientMessage_ = clientMessage_;
+        } else {
+          result.clientMessage_ = clientMessageBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        if (serverMessageBuilder_ == null) {
+          result.serverMessage_ = serverMessage_;
+        } else {
+          result.serverMessage_ = serverMessageBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -462,6 +606,12 @@ public final class HerdProtos {
         }
         if (other.hasSharedSecret()) {
           setSharedSecret(other.getSharedSecret());
+        }
+        if (other.hasClientMessage()) {
+          mergeClientMessage(other.getClientMessage());
+        }
+        if (other.hasServerMessage()) {
+          mergeServerMessage(other.getServerMessage());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -631,6 +781,240 @@ public final class HerdProtos {
         sharedSecret_ = getDefaultInstance().getSharedSecret();
         onChanged();
         return this;
+      }
+
+      // optional .ClientMessage clientMessage = 4;
+      private org.denovogroup.murmur.objects.HerdProtos.ClientMessage clientMessage_ = org.denovogroup.murmur.objects.HerdProtos.ClientMessage.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.denovogroup.murmur.objects.HerdProtos.ClientMessage, org.denovogroup.murmur.objects.HerdProtos.ClientMessage.Builder, org.denovogroup.murmur.objects.HerdProtos.ClientMessageOrBuilder> clientMessageBuilder_;
+      /**
+       * <code>optional .ClientMessage clientMessage = 4;</code>
+       */
+      public boolean hasClientMessage() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional .ClientMessage clientMessage = 4;</code>
+       */
+      public org.denovogroup.murmur.objects.HerdProtos.ClientMessage getClientMessage() {
+        if (clientMessageBuilder_ == null) {
+          return clientMessage_;
+        } else {
+          return clientMessageBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .ClientMessage clientMessage = 4;</code>
+       */
+      public Builder setClientMessage(org.denovogroup.murmur.objects.HerdProtos.ClientMessage value) {
+        if (clientMessageBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          clientMessage_ = value;
+          onChanged();
+        } else {
+          clientMessageBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000008;
+        return this;
+      }
+      /**
+       * <code>optional .ClientMessage clientMessage = 4;</code>
+       */
+      public Builder setClientMessage(
+          org.denovogroup.murmur.objects.HerdProtos.ClientMessage.Builder builderForValue) {
+        if (clientMessageBuilder_ == null) {
+          clientMessage_ = builderForValue.build();
+          onChanged();
+        } else {
+          clientMessageBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000008;
+        return this;
+      }
+      /**
+       * <code>optional .ClientMessage clientMessage = 4;</code>
+       */
+      public Builder mergeClientMessage(org.denovogroup.murmur.objects.HerdProtos.ClientMessage value) {
+        if (clientMessageBuilder_ == null) {
+          if (((bitField0_ & 0x00000008) == 0x00000008) &&
+              clientMessage_ != org.denovogroup.murmur.objects.HerdProtos.ClientMessage.getDefaultInstance()) {
+            clientMessage_ =
+              org.denovogroup.murmur.objects.HerdProtos.ClientMessage.newBuilder(clientMessage_).mergeFrom(value).buildPartial();
+          } else {
+            clientMessage_ = value;
+          }
+          onChanged();
+        } else {
+          clientMessageBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000008;
+        return this;
+      }
+      /**
+       * <code>optional .ClientMessage clientMessage = 4;</code>
+       */
+      public Builder clearClientMessage() {
+        if (clientMessageBuilder_ == null) {
+          clientMessage_ = org.denovogroup.murmur.objects.HerdProtos.ClientMessage.getDefaultInstance();
+          onChanged();
+        } else {
+          clientMessageBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000008);
+        return this;
+      }
+      /**
+       * <code>optional .ClientMessage clientMessage = 4;</code>
+       */
+      public org.denovogroup.murmur.objects.HerdProtos.ClientMessage.Builder getClientMessageBuilder() {
+        bitField0_ |= 0x00000008;
+        onChanged();
+        return getClientMessageFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .ClientMessage clientMessage = 4;</code>
+       */
+      public org.denovogroup.murmur.objects.HerdProtos.ClientMessageOrBuilder getClientMessageOrBuilder() {
+        if (clientMessageBuilder_ != null) {
+          return clientMessageBuilder_.getMessageOrBuilder();
+        } else {
+          return clientMessage_;
+        }
+      }
+      /**
+       * <code>optional .ClientMessage clientMessage = 4;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.denovogroup.murmur.objects.HerdProtos.ClientMessage, org.denovogroup.murmur.objects.HerdProtos.ClientMessage.Builder, org.denovogroup.murmur.objects.HerdProtos.ClientMessageOrBuilder> 
+          getClientMessageFieldBuilder() {
+        if (clientMessageBuilder_ == null) {
+          clientMessageBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.denovogroup.murmur.objects.HerdProtos.ClientMessage, org.denovogroup.murmur.objects.HerdProtos.ClientMessage.Builder, org.denovogroup.murmur.objects.HerdProtos.ClientMessageOrBuilder>(
+                  clientMessage_,
+                  getParentForChildren(),
+                  isClean());
+          clientMessage_ = null;
+        }
+        return clientMessageBuilder_;
+      }
+
+      // optional .ServerMessage serverMessage = 5;
+      private org.denovogroup.murmur.objects.HerdProtos.ServerMessage serverMessage_ = org.denovogroup.murmur.objects.HerdProtos.ServerMessage.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.denovogroup.murmur.objects.HerdProtos.ServerMessage, org.denovogroup.murmur.objects.HerdProtos.ServerMessage.Builder, org.denovogroup.murmur.objects.HerdProtos.ServerMessageOrBuilder> serverMessageBuilder_;
+      /**
+       * <code>optional .ServerMessage serverMessage = 5;</code>
+       */
+      public boolean hasServerMessage() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional .ServerMessage serverMessage = 5;</code>
+       */
+      public org.denovogroup.murmur.objects.HerdProtos.ServerMessage getServerMessage() {
+        if (serverMessageBuilder_ == null) {
+          return serverMessage_;
+        } else {
+          return serverMessageBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .ServerMessage serverMessage = 5;</code>
+       */
+      public Builder setServerMessage(org.denovogroup.murmur.objects.HerdProtos.ServerMessage value) {
+        if (serverMessageBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          serverMessage_ = value;
+          onChanged();
+        } else {
+          serverMessageBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      /**
+       * <code>optional .ServerMessage serverMessage = 5;</code>
+       */
+      public Builder setServerMessage(
+          org.denovogroup.murmur.objects.HerdProtos.ServerMessage.Builder builderForValue) {
+        if (serverMessageBuilder_ == null) {
+          serverMessage_ = builderForValue.build();
+          onChanged();
+        } else {
+          serverMessageBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      /**
+       * <code>optional .ServerMessage serverMessage = 5;</code>
+       */
+      public Builder mergeServerMessage(org.denovogroup.murmur.objects.HerdProtos.ServerMessage value) {
+        if (serverMessageBuilder_ == null) {
+          if (((bitField0_ & 0x00000010) == 0x00000010) &&
+              serverMessage_ != org.denovogroup.murmur.objects.HerdProtos.ServerMessage.getDefaultInstance()) {
+            serverMessage_ =
+              org.denovogroup.murmur.objects.HerdProtos.ServerMessage.newBuilder(serverMessage_).mergeFrom(value).buildPartial();
+          } else {
+            serverMessage_ = value;
+          }
+          onChanged();
+        } else {
+          serverMessageBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      /**
+       * <code>optional .ServerMessage serverMessage = 5;</code>
+       */
+      public Builder clearServerMessage() {
+        if (serverMessageBuilder_ == null) {
+          serverMessage_ = org.denovogroup.murmur.objects.HerdProtos.ServerMessage.getDefaultInstance();
+          onChanged();
+        } else {
+          serverMessageBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000010);
+        return this;
+      }
+      /**
+       * <code>optional .ServerMessage serverMessage = 5;</code>
+       */
+      public org.denovogroup.murmur.objects.HerdProtos.ServerMessage.Builder getServerMessageBuilder() {
+        bitField0_ |= 0x00000010;
+        onChanged();
+        return getServerMessageFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .ServerMessage serverMessage = 5;</code>
+       */
+      public org.denovogroup.murmur.objects.HerdProtos.ServerMessageOrBuilder getServerMessageOrBuilder() {
+        if (serverMessageBuilder_ != null) {
+          return serverMessageBuilder_.getMessageOrBuilder();
+        } else {
+          return serverMessage_;
+        }
+      }
+      /**
+       * <code>optional .ServerMessage serverMessage = 5;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.denovogroup.murmur.objects.HerdProtos.ServerMessage, org.denovogroup.murmur.objects.HerdProtos.ServerMessage.Builder, org.denovogroup.murmur.objects.HerdProtos.ServerMessageOrBuilder> 
+          getServerMessageFieldBuilder() {
+        if (serverMessageBuilder_ == null) {
+          serverMessageBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.denovogroup.murmur.objects.HerdProtos.ServerMessage, org.denovogroup.murmur.objects.HerdProtos.ServerMessage.Builder, org.denovogroup.murmur.objects.HerdProtos.ServerMessageOrBuilder>(
+                  serverMessage_,
+                  getParentForChildren(),
+                  isClean());
+          serverMessage_ = null;
+        }
+        return serverMessageBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:HandshakeMessage)
@@ -1271,6 +1655,1164 @@ public final class HerdProtos {
     // @@protoc_insertion_point(class_scope:HerdPacket)
   }
 
+  public interface ClientMessageOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+
+    // optional int32 setSize = 1;
+    /**
+     * <code>optional int32 setSize = 1;</code>
+     */
+    boolean hasSetSize();
+    /**
+     * <code>optional int32 setSize = 1;</code>
+     */
+    int getSetSize();
+
+    // repeated bytes blindedFriends = 2;
+    /**
+     * <code>repeated bytes blindedFriends = 2;</code>
+     */
+    java.util.List<com.google.protobuf.ByteString> getBlindedFriendsList();
+    /**
+     * <code>repeated bytes blindedFriends = 2;</code>
+     */
+    int getBlindedFriendsCount();
+    /**
+     * <code>repeated bytes blindedFriends = 2;</code>
+     */
+    com.google.protobuf.ByteString getBlindedFriends(int index);
+  }
+  /**
+   * Protobuf type {@code ClientMessage}
+   */
+  public static final class ClientMessage extends
+      com.google.protobuf.GeneratedMessage
+      implements ClientMessageOrBuilder {
+    // Use ClientMessage.newBuilder() to construct.
+    private ClientMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private ClientMessage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final ClientMessage defaultInstance;
+    public static ClientMessage getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public ClientMessage getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private ClientMessage(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              setSize_ = input.readInt32();
+              break;
+            }
+            case 18: {
+              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                blindedFriends_ = new java.util.ArrayList<com.google.protobuf.ByteString>();
+                mutable_bitField0_ |= 0x00000002;
+              }
+              blindedFriends_.add(input.readBytes());
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+          blindedFriends_ = java.util.Collections.unmodifiableList(blindedFriends_);
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.denovogroup.murmur.objects.HerdProtos.internal_static_ClientMessage_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.denovogroup.murmur.objects.HerdProtos.internal_static_ClientMessage_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.denovogroup.murmur.objects.HerdProtos.ClientMessage.class, org.denovogroup.murmur.objects.HerdProtos.ClientMessage.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<ClientMessage> PARSER =
+        new com.google.protobuf.AbstractParser<ClientMessage>() {
+      public ClientMessage parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new ClientMessage(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<ClientMessage> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // optional int32 setSize = 1;
+    public static final int SETSIZE_FIELD_NUMBER = 1;
+    private int setSize_;
+    /**
+     * <code>optional int32 setSize = 1;</code>
+     */
+    public boolean hasSetSize() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>optional int32 setSize = 1;</code>
+     */
+    public int getSetSize() {
+      return setSize_;
+    }
+
+    // repeated bytes blindedFriends = 2;
+    public static final int BLINDEDFRIENDS_FIELD_NUMBER = 2;
+    private java.util.List<com.google.protobuf.ByteString> blindedFriends_;
+    /**
+     * <code>repeated bytes blindedFriends = 2;</code>
+     */
+    public java.util.List<com.google.protobuf.ByteString>
+        getBlindedFriendsList() {
+      return blindedFriends_;
+    }
+    /**
+     * <code>repeated bytes blindedFriends = 2;</code>
+     */
+    public int getBlindedFriendsCount() {
+      return blindedFriends_.size();
+    }
+    /**
+     * <code>repeated bytes blindedFriends = 2;</code>
+     */
+    public com.google.protobuf.ByteString getBlindedFriends(int index) {
+      return blindedFriends_.get(index);
+    }
+
+    private void initFields() {
+      setSize_ = 0;
+      blindedFriends_ = java.util.Collections.emptyList();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeInt32(1, setSize_);
+      }
+      for (int i = 0; i < blindedFriends_.size(); i++) {
+        output.writeBytes(2, blindedFriends_.get(i));
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(1, setSize_);
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < blindedFriends_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(blindedFriends_.get(i));
+        }
+        size += dataSize;
+        size += 1 * getBlindedFriendsList().size();
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static org.denovogroup.murmur.objects.HerdProtos.ClientMessage parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ClientMessage parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ClientMessage parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ClientMessage parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ClientMessage parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ClientMessage parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ClientMessage parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ClientMessage parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ClientMessage parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ClientMessage parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(org.denovogroup.murmur.objects.HerdProtos.ClientMessage prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code ClientMessage}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements org.denovogroup.murmur.objects.HerdProtos.ClientMessageOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.denovogroup.murmur.objects.HerdProtos.internal_static_ClientMessage_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.denovogroup.murmur.objects.HerdProtos.internal_static_ClientMessage_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.denovogroup.murmur.objects.HerdProtos.ClientMessage.class, org.denovogroup.murmur.objects.HerdProtos.ClientMessage.Builder.class);
+      }
+
+      // Construct using org.denovogroup.murmur.objects.HerdProtos.ClientMessage.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        setSize_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        blindedFriends_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.denovogroup.murmur.objects.HerdProtos.internal_static_ClientMessage_descriptor;
+      }
+
+      public org.denovogroup.murmur.objects.HerdProtos.ClientMessage getDefaultInstanceForType() {
+        return org.denovogroup.murmur.objects.HerdProtos.ClientMessage.getDefaultInstance();
+      }
+
+      public org.denovogroup.murmur.objects.HerdProtos.ClientMessage build() {
+        org.denovogroup.murmur.objects.HerdProtos.ClientMessage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public org.denovogroup.murmur.objects.HerdProtos.ClientMessage buildPartial() {
+        org.denovogroup.murmur.objects.HerdProtos.ClientMessage result = new org.denovogroup.murmur.objects.HerdProtos.ClientMessage(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.setSize_ = setSize_;
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          blindedFriends_ = java.util.Collections.unmodifiableList(blindedFriends_);
+          bitField0_ = (bitField0_ & ~0x00000002);
+        }
+        result.blindedFriends_ = blindedFriends_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.denovogroup.murmur.objects.HerdProtos.ClientMessage) {
+          return mergeFrom((org.denovogroup.murmur.objects.HerdProtos.ClientMessage)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(org.denovogroup.murmur.objects.HerdProtos.ClientMessage other) {
+        if (other == org.denovogroup.murmur.objects.HerdProtos.ClientMessage.getDefaultInstance()) return this;
+        if (other.hasSetSize()) {
+          setSetSize(other.getSetSize());
+        }
+        if (!other.blindedFriends_.isEmpty()) {
+          if (blindedFriends_.isEmpty()) {
+            blindedFriends_ = other.blindedFriends_;
+            bitField0_ = (bitField0_ & ~0x00000002);
+          } else {
+            ensureBlindedFriendsIsMutable();
+            blindedFriends_.addAll(other.blindedFriends_);
+          }
+          onChanged();
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        org.denovogroup.murmur.objects.HerdProtos.ClientMessage parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.denovogroup.murmur.objects.HerdProtos.ClientMessage) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // optional int32 setSize = 1;
+      private int setSize_ ;
+      /**
+       * <code>optional int32 setSize = 1;</code>
+       */
+      public boolean hasSetSize() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>optional int32 setSize = 1;</code>
+       */
+      public int getSetSize() {
+        return setSize_;
+      }
+      /**
+       * <code>optional int32 setSize = 1;</code>
+       */
+      public Builder setSetSize(int value) {
+        bitField0_ |= 0x00000001;
+        setSize_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 setSize = 1;</code>
+       */
+      public Builder clearSetSize() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        setSize_ = 0;
+        onChanged();
+        return this;
+      }
+
+      // repeated bytes blindedFriends = 2;
+      private java.util.List<com.google.protobuf.ByteString> blindedFriends_ = java.util.Collections.emptyList();
+      private void ensureBlindedFriendsIsMutable() {
+        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+          blindedFriends_ = new java.util.ArrayList<com.google.protobuf.ByteString>(blindedFriends_);
+          bitField0_ |= 0x00000002;
+         }
+      }
+      /**
+       * <code>repeated bytes blindedFriends = 2;</code>
+       */
+      public java.util.List<com.google.protobuf.ByteString>
+          getBlindedFriendsList() {
+        return java.util.Collections.unmodifiableList(blindedFriends_);
+      }
+      /**
+       * <code>repeated bytes blindedFriends = 2;</code>
+       */
+      public int getBlindedFriendsCount() {
+        return blindedFriends_.size();
+      }
+      /**
+       * <code>repeated bytes blindedFriends = 2;</code>
+       */
+      public com.google.protobuf.ByteString getBlindedFriends(int index) {
+        return blindedFriends_.get(index);
+      }
+      /**
+       * <code>repeated bytes blindedFriends = 2;</code>
+       */
+      public Builder setBlindedFriends(
+          int index, com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureBlindedFriendsIsMutable();
+        blindedFriends_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bytes blindedFriends = 2;</code>
+       */
+      public Builder addBlindedFriends(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureBlindedFriendsIsMutable();
+        blindedFriends_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bytes blindedFriends = 2;</code>
+       */
+      public Builder addAllBlindedFriends(
+          java.lang.Iterable<? extends com.google.protobuf.ByteString> values) {
+        ensureBlindedFriendsIsMutable();
+        super.addAll(values, blindedFriends_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bytes blindedFriends = 2;</code>
+       */
+      public Builder clearBlindedFriends() {
+        blindedFriends_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:ClientMessage)
+    }
+
+    static {
+      defaultInstance = new ClientMessage(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:ClientMessage)
+  }
+
+  public interface ServerMessageOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+
+    // repeated bytes doubleBlindedFriends = 1;
+    /**
+     * <code>repeated bytes doubleBlindedFriends = 1;</code>
+     */
+    java.util.List<com.google.protobuf.ByteString> getDoubleBlindedFriendsList();
+    /**
+     * <code>repeated bytes doubleBlindedFriends = 1;</code>
+     */
+    int getDoubleBlindedFriendsCount();
+    /**
+     * <code>repeated bytes doubleBlindedFriends = 1;</code>
+     */
+    com.google.protobuf.ByteString getDoubleBlindedFriends(int index);
+
+    // repeated bytes hashedBlindedFriends = 2;
+    /**
+     * <code>repeated bytes hashedBlindedFriends = 2;</code>
+     */
+    java.util.List<com.google.protobuf.ByteString> getHashedBlindedFriendsList();
+    /**
+     * <code>repeated bytes hashedBlindedFriends = 2;</code>
+     */
+    int getHashedBlindedFriendsCount();
+    /**
+     * <code>repeated bytes hashedBlindedFriends = 2;</code>
+     */
+    com.google.protobuf.ByteString getHashedBlindedFriends(int index);
+  }
+  /**
+   * Protobuf type {@code ServerMessage}
+   */
+  public static final class ServerMessage extends
+      com.google.protobuf.GeneratedMessage
+      implements ServerMessageOrBuilder {
+    // Use ServerMessage.newBuilder() to construct.
+    private ServerMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private ServerMessage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final ServerMessage defaultInstance;
+    public static ServerMessage getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public ServerMessage getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private ServerMessage(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+                doubleBlindedFriends_ = new java.util.ArrayList<com.google.protobuf.ByteString>();
+                mutable_bitField0_ |= 0x00000001;
+              }
+              doubleBlindedFriends_.add(input.readBytes());
+              break;
+            }
+            case 18: {
+              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                hashedBlindedFriends_ = new java.util.ArrayList<com.google.protobuf.ByteString>();
+                mutable_bitField0_ |= 0x00000002;
+              }
+              hashedBlindedFriends_.add(input.readBytes());
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+          doubleBlindedFriends_ = java.util.Collections.unmodifiableList(doubleBlindedFriends_);
+        }
+        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+          hashedBlindedFriends_ = java.util.Collections.unmodifiableList(hashedBlindedFriends_);
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.denovogroup.murmur.objects.HerdProtos.internal_static_ServerMessage_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.denovogroup.murmur.objects.HerdProtos.internal_static_ServerMessage_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.denovogroup.murmur.objects.HerdProtos.ServerMessage.class, org.denovogroup.murmur.objects.HerdProtos.ServerMessage.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<ServerMessage> PARSER =
+        new com.google.protobuf.AbstractParser<ServerMessage>() {
+      public ServerMessage parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new ServerMessage(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<ServerMessage> getParserForType() {
+      return PARSER;
+    }
+
+    // repeated bytes doubleBlindedFriends = 1;
+    public static final int DOUBLEBLINDEDFRIENDS_FIELD_NUMBER = 1;
+    private java.util.List<com.google.protobuf.ByteString> doubleBlindedFriends_;
+    /**
+     * <code>repeated bytes doubleBlindedFriends = 1;</code>
+     */
+    public java.util.List<com.google.protobuf.ByteString>
+        getDoubleBlindedFriendsList() {
+      return doubleBlindedFriends_;
+    }
+    /**
+     * <code>repeated bytes doubleBlindedFriends = 1;</code>
+     */
+    public int getDoubleBlindedFriendsCount() {
+      return doubleBlindedFriends_.size();
+    }
+    /**
+     * <code>repeated bytes doubleBlindedFriends = 1;</code>
+     */
+    public com.google.protobuf.ByteString getDoubleBlindedFriends(int index) {
+      return doubleBlindedFriends_.get(index);
+    }
+
+    // repeated bytes hashedBlindedFriends = 2;
+    public static final int HASHEDBLINDEDFRIENDS_FIELD_NUMBER = 2;
+    private java.util.List<com.google.protobuf.ByteString> hashedBlindedFriends_;
+    /**
+     * <code>repeated bytes hashedBlindedFriends = 2;</code>
+     */
+    public java.util.List<com.google.protobuf.ByteString>
+        getHashedBlindedFriendsList() {
+      return hashedBlindedFriends_;
+    }
+    /**
+     * <code>repeated bytes hashedBlindedFriends = 2;</code>
+     */
+    public int getHashedBlindedFriendsCount() {
+      return hashedBlindedFriends_.size();
+    }
+    /**
+     * <code>repeated bytes hashedBlindedFriends = 2;</code>
+     */
+    public com.google.protobuf.ByteString getHashedBlindedFriends(int index) {
+      return hashedBlindedFriends_.get(index);
+    }
+
+    private void initFields() {
+      doubleBlindedFriends_ = java.util.Collections.emptyList();
+      hashedBlindedFriends_ = java.util.Collections.emptyList();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      for (int i = 0; i < doubleBlindedFriends_.size(); i++) {
+        output.writeBytes(1, doubleBlindedFriends_.get(i));
+      }
+      for (int i = 0; i < hashedBlindedFriends_.size(); i++) {
+        output.writeBytes(2, hashedBlindedFriends_.get(i));
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      {
+        int dataSize = 0;
+        for (int i = 0; i < doubleBlindedFriends_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(doubleBlindedFriends_.get(i));
+        }
+        size += dataSize;
+        size += 1 * getDoubleBlindedFriendsList().size();
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < hashedBlindedFriends_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(hashedBlindedFriends_.get(i));
+        }
+        size += dataSize;
+        size += 1 * getHashedBlindedFriendsList().size();
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static org.denovogroup.murmur.objects.HerdProtos.ServerMessage parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ServerMessage parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ServerMessage parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ServerMessage parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ServerMessage parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ServerMessage parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ServerMessage parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ServerMessage parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ServerMessage parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.denovogroup.murmur.objects.HerdProtos.ServerMessage parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(org.denovogroup.murmur.objects.HerdProtos.ServerMessage prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code ServerMessage}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements org.denovogroup.murmur.objects.HerdProtos.ServerMessageOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.denovogroup.murmur.objects.HerdProtos.internal_static_ServerMessage_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.denovogroup.murmur.objects.HerdProtos.internal_static_ServerMessage_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.denovogroup.murmur.objects.HerdProtos.ServerMessage.class, org.denovogroup.murmur.objects.HerdProtos.ServerMessage.Builder.class);
+      }
+
+      // Construct using org.denovogroup.murmur.objects.HerdProtos.ServerMessage.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        doubleBlindedFriends_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);
+        hashedBlindedFriends_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.denovogroup.murmur.objects.HerdProtos.internal_static_ServerMessage_descriptor;
+      }
+
+      public org.denovogroup.murmur.objects.HerdProtos.ServerMessage getDefaultInstanceForType() {
+        return org.denovogroup.murmur.objects.HerdProtos.ServerMessage.getDefaultInstance();
+      }
+
+      public org.denovogroup.murmur.objects.HerdProtos.ServerMessage build() {
+        org.denovogroup.murmur.objects.HerdProtos.ServerMessage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public org.denovogroup.murmur.objects.HerdProtos.ServerMessage buildPartial() {
+        org.denovogroup.murmur.objects.HerdProtos.ServerMessage result = new org.denovogroup.murmur.objects.HerdProtos.ServerMessage(this);
+        int from_bitField0_ = bitField0_;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          doubleBlindedFriends_ = java.util.Collections.unmodifiableList(doubleBlindedFriends_);
+          bitField0_ = (bitField0_ & ~0x00000001);
+        }
+        result.doubleBlindedFriends_ = doubleBlindedFriends_;
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          hashedBlindedFriends_ = java.util.Collections.unmodifiableList(hashedBlindedFriends_);
+          bitField0_ = (bitField0_ & ~0x00000002);
+        }
+        result.hashedBlindedFriends_ = hashedBlindedFriends_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.denovogroup.murmur.objects.HerdProtos.ServerMessage) {
+          return mergeFrom((org.denovogroup.murmur.objects.HerdProtos.ServerMessage)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(org.denovogroup.murmur.objects.HerdProtos.ServerMessage other) {
+        if (other == org.denovogroup.murmur.objects.HerdProtos.ServerMessage.getDefaultInstance()) return this;
+        if (!other.doubleBlindedFriends_.isEmpty()) {
+          if (doubleBlindedFriends_.isEmpty()) {
+            doubleBlindedFriends_ = other.doubleBlindedFriends_;
+            bitField0_ = (bitField0_ & ~0x00000001);
+          } else {
+            ensureDoubleBlindedFriendsIsMutable();
+            doubleBlindedFriends_.addAll(other.doubleBlindedFriends_);
+          }
+          onChanged();
+        }
+        if (!other.hashedBlindedFriends_.isEmpty()) {
+          if (hashedBlindedFriends_.isEmpty()) {
+            hashedBlindedFriends_ = other.hashedBlindedFriends_;
+            bitField0_ = (bitField0_ & ~0x00000002);
+          } else {
+            ensureHashedBlindedFriendsIsMutable();
+            hashedBlindedFriends_.addAll(other.hashedBlindedFriends_);
+          }
+          onChanged();
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        org.denovogroup.murmur.objects.HerdProtos.ServerMessage parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.denovogroup.murmur.objects.HerdProtos.ServerMessage) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // repeated bytes doubleBlindedFriends = 1;
+      private java.util.List<com.google.protobuf.ByteString> doubleBlindedFriends_ = java.util.Collections.emptyList();
+      private void ensureDoubleBlindedFriendsIsMutable() {
+        if (!((bitField0_ & 0x00000001) == 0x00000001)) {
+          doubleBlindedFriends_ = new java.util.ArrayList<com.google.protobuf.ByteString>(doubleBlindedFriends_);
+          bitField0_ |= 0x00000001;
+         }
+      }
+      /**
+       * <code>repeated bytes doubleBlindedFriends = 1;</code>
+       */
+      public java.util.List<com.google.protobuf.ByteString>
+          getDoubleBlindedFriendsList() {
+        return java.util.Collections.unmodifiableList(doubleBlindedFriends_);
+      }
+      /**
+       * <code>repeated bytes doubleBlindedFriends = 1;</code>
+       */
+      public int getDoubleBlindedFriendsCount() {
+        return doubleBlindedFriends_.size();
+      }
+      /**
+       * <code>repeated bytes doubleBlindedFriends = 1;</code>
+       */
+      public com.google.protobuf.ByteString getDoubleBlindedFriends(int index) {
+        return doubleBlindedFriends_.get(index);
+      }
+      /**
+       * <code>repeated bytes doubleBlindedFriends = 1;</code>
+       */
+      public Builder setDoubleBlindedFriends(
+          int index, com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureDoubleBlindedFriendsIsMutable();
+        doubleBlindedFriends_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bytes doubleBlindedFriends = 1;</code>
+       */
+      public Builder addDoubleBlindedFriends(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureDoubleBlindedFriendsIsMutable();
+        doubleBlindedFriends_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bytes doubleBlindedFriends = 1;</code>
+       */
+      public Builder addAllDoubleBlindedFriends(
+          java.lang.Iterable<? extends com.google.protobuf.ByteString> values) {
+        ensureDoubleBlindedFriendsIsMutable();
+        super.addAll(values, doubleBlindedFriends_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bytes doubleBlindedFriends = 1;</code>
+       */
+      public Builder clearDoubleBlindedFriends() {
+        doubleBlindedFriends_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);
+        onChanged();
+        return this;
+      }
+
+      // repeated bytes hashedBlindedFriends = 2;
+      private java.util.List<com.google.protobuf.ByteString> hashedBlindedFriends_ = java.util.Collections.emptyList();
+      private void ensureHashedBlindedFriendsIsMutable() {
+        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+          hashedBlindedFriends_ = new java.util.ArrayList<com.google.protobuf.ByteString>(hashedBlindedFriends_);
+          bitField0_ |= 0x00000002;
+         }
+      }
+      /**
+       * <code>repeated bytes hashedBlindedFriends = 2;</code>
+       */
+      public java.util.List<com.google.protobuf.ByteString>
+          getHashedBlindedFriendsList() {
+        return java.util.Collections.unmodifiableList(hashedBlindedFriends_);
+      }
+      /**
+       * <code>repeated bytes hashedBlindedFriends = 2;</code>
+       */
+      public int getHashedBlindedFriendsCount() {
+        return hashedBlindedFriends_.size();
+      }
+      /**
+       * <code>repeated bytes hashedBlindedFriends = 2;</code>
+       */
+      public com.google.protobuf.ByteString getHashedBlindedFriends(int index) {
+        return hashedBlindedFriends_.get(index);
+      }
+      /**
+       * <code>repeated bytes hashedBlindedFriends = 2;</code>
+       */
+      public Builder setHashedBlindedFriends(
+          int index, com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureHashedBlindedFriendsIsMutable();
+        hashedBlindedFriends_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bytes hashedBlindedFriends = 2;</code>
+       */
+      public Builder addHashedBlindedFriends(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureHashedBlindedFriendsIsMutable();
+        hashedBlindedFriends_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bytes hashedBlindedFriends = 2;</code>
+       */
+      public Builder addAllHashedBlindedFriends(
+          java.lang.Iterable<? extends com.google.protobuf.ByteString> values) {
+        ensureHashedBlindedFriendsIsMutable();
+        super.addAll(values, hashedBlindedFriends_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bytes hashedBlindedFriends = 2;</code>
+       */
+      public Builder clearHashedBlindedFriends() {
+        hashedBlindedFriends_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:ServerMessage)
+    }
+
+    static {
+      defaultInstance = new ServerMessage(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:ServerMessage)
+  }
+
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_HandshakeMessage_descriptor;
   private static
@@ -1281,6 +2823,16 @@ public final class HerdProtos {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_HerdPacket_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_ClientMessage_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_ClientMessage_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_ServerMessage_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_ServerMessage_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -1290,11 +2842,17 @@ public final class HerdProtos {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\nHerd.proto\"T\n\020HandshakeMessage\022\025\n\rpubl" +
-      "icDevieID\030\001 \001(\t\022\023\n\013messageType\030\002 \001(\005\022\024\n\014" +
-      "sharedSecret\030\003 \001(\014\"2\n\nHerdPacket\022\023\n\013dest" +
-      "ination\030\001 \001(\t\022\017\n\007payload\030\002 \001(\tB,\n\036org.de" +
-      "novogroup.murmur.objectsB\nHerdProtos"
+      "\n\nHerd.proto\"\242\001\n\020HandshakeMessage\022\025\n\rpub" +
+      "licDevieID\030\001 \001(\t\022\023\n\013messageType\030\002 \001(\005\022\024\n" +
+      "\014sharedSecret\030\003 \001(\014\022%\n\rclientMessage\030\004 \001" +
+      "(\0132\016.ClientMessage\022%\n\rserverMessage\030\005 \001(" +
+      "\0132\016.ServerMessage\"2\n\nHerdPacket\022\023\n\013desti" +
+      "nation\030\001 \001(\t\022\017\n\007payload\030\002 \001(\t\"8\n\rClientM" +
+      "essage\022\017\n\007setSize\030\001 \001(\005\022\026\n\016blindedFriend" +
+      "s\030\002 \003(\014\"K\n\rServerMessage\022\034\n\024doubleBlinde" +
+      "dFriends\030\001 \003(\014\022\034\n\024hashedBlindedFriends\030\002" +
+      " \003(\014B,\n\036org.denovogroup.murmur.objectsB\n",
+      "HerdProtos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1306,13 +2864,25 @@ public final class HerdProtos {
           internal_static_HandshakeMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_HandshakeMessage_descriptor,
-              new java.lang.String[] { "PublicDevieID", "MessageType", "SharedSecret", });
+              new java.lang.String[] { "PublicDevieID", "MessageType", "SharedSecret", "ClientMessage", "ServerMessage", });
           internal_static_HerdPacket_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_HerdPacket_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_HerdPacket_descriptor,
               new java.lang.String[] { "Destination", "Payload", });
+          internal_static_ClientMessage_descriptor =
+            getDescriptor().getMessageTypes().get(2);
+          internal_static_ClientMessage_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_ClientMessage_descriptor,
+              new java.lang.String[] { "SetSize", "BlindedFriends", });
+          internal_static_ServerMessage_descriptor =
+            getDescriptor().getMessageTypes().get(3);
+          internal_static_ServerMessage_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_ServerMessage_descriptor,
+              new java.lang.String[] { "DoubleBlindedFriends", "HashedBlindedFriends", });
           return null;
         }
       };

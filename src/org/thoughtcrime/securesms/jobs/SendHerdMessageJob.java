@@ -50,8 +50,11 @@ import org.whispersystems.signalservice.internal.util.JsonUtil;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
@@ -66,7 +69,20 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     public static final int TYPE_HANDSHAKE_RESPONSE = 1;
     public static final int TYPE_MESSAGE = 2;
 
-    public static final Object HERD_LOCK = new Object();
+    public static final int TYPE_PSI_SYN = 3;
+    public static final int TYPE_PSI_SYN_ACK = 4;
+    public static final int TYPE_PSI_ACK = 5;
+    public static final int TYPE_PSI_ACK_END = 6;
+
+    private static final Object HERD_LOCK = new Object();
+
+    private static final ReentrantLock PSI_CLIENT_LOCK = new ReentrantLock();
+    private static final ReentrantLock PSI_SERVER_LOCK = new ReentrantLock();
+    private static Crypto.PrivateSetIntersection mServerPSI;
+    private static Crypto.PrivateSetIntersection mClientPSI;
+
+    private static final int PSI_SYN_SET_SIZE = 10;
+
     public static long previousRun = 0;
 
     private static final long serialVersionUID = 1L;
@@ -83,6 +99,12 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
 
     private String destination = null;
 
+    public SendHerdMessageJob(Context context, String destination, int messageType) {
+        super(context, constructParameters(context, destination));
+        this.destination = destination;
+        this.messageType = messageType;
+    }
+
     public SendHerdMessageJob(Context context, long messageID, String destination, int messageType) {
         super(context, constructParameters(context, destination));
         this.messageID = messageID;
@@ -95,18 +117,18 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
 
         this.destination = destination;
         this.messageType = messageType;
-        this.mobyId      = mobyId;
+        this.mobyId = mobyId;
 
         FriendStore friendStore = FriendStore.getInstance(context);
 
-        if(messageType == TYPE_HANDSHAKE_REQUEST) {
+        if (messageType == TYPE_HANDSHAKE_REQUEST) {
             // Adding Friend to FriendStore so that we don't keep spamming them :)
             // In case it's a request, if not, we'd overwrite the value!
             friendStore.addFriend("", FriendStore.ADDED_VIA_HERD_HANDSHAKE, destination, null);
             this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
                     .setPublicDevieID(friendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT))
                     .setMessageType(this.messageType).build();
-        } else if(messageType == TYPE_HANDSHAKE_RESPONSE) {
+        } else if (messageType == TYPE_HANDSHAKE_RESPONSE) {
             // Generate a shard secret for that user and add it to the Friend store.
             try {
                 KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
@@ -148,22 +170,77 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
 
     @Override
     public void onPushSend(MasterSecret masterSecret) throws NoSuchMessageException {
-        if (this.messageType == this.TYPE_MESSAGE) {
-            Log.d(TAG, "Trying to send a local herd message!!");
-            deliverMessage(masterSecret);
-        } else {
-            try {
-                Thread.sleep(calculateSleep());
-                deliverHandshake();
-            } catch (InsecureFallbackApprovalException e) {
-                Log.w(TAG, e);
-            } catch (UntrustedIdentityException e) {
-                Log.w(TAG, e);
-            } catch (InterruptedException e) {
-                // This should rarely happen, we accept the failure in such circumstances.
-                Log.w(TAG, e);
-            }
+        HerdProtos.ClientMessage clientMessage;
+        HerdProtos.ServerMessage serverMessage;
+        switch (this.messageType) {
+            case TYPE_MESSAGE:
+                Log.d(TAG, "Trying to send a local herd message!!");
+                deliverMessage(masterSecret);
+                break;
+            case TYPE_HANDSHAKE_REQUEST:
+            case TYPE_HANDSHAKE_RESPONSE:
+                try {
+                    Thread.sleep(calculateSleep());
+                    deliverHandshake();
+                } catch (InsecureFallbackApprovalException | UntrustedIdentityException | InterruptedException e) {
+                    // This should rarely happen, we accept the failure in such circumstances.
+                    Log.w(TAG, e);
+                }
+                break;
+            case TYPE_PSI_SYN:
+                ArrayList<byte[]> friends = getNFriendsBytes(PSI_SYN_SET_SIZE);
+                try {
+                    mClientPSI = new Crypto.PrivateSetIntersection(friends);
+                } catch (NoSuchAlgorithmException e) {
+                }
+                ArrayList<ByteString> friendsProtos = new ArrayList<>();
+                for (byte[] friend : friends) {
+                    friendsProtos.add(ByteString.copyFrom(friend));
+                }
+                clientMessage = HerdProtos.ClientMessage.newBuilder()
+                        .addAllBlindedFriends(friendsProtos)
+                        .build();
+                this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
+                        .setMessageType(messageType)
+                        .setClientMessage(clientMessage)
+                        .build();
+                try {
+                    deliverPSIMessage(masterSecret);
+                } catch (InsecureFallbackApprovalException | UntrustedIdentityException e) {
+                    // This should rarely happen, we accept the failure in such circumstances.
+                    Log.w(TAG, e);
+                }
+                break;
+            case TYPE_PSI_SYN_ACK:
+                serverMessage = this.herdHandshakeMessage.getServerMessage();
+                clientMessage = this.herdHandshakeMessage.getClientMessage();
+                this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
+                        .setMessageType(messageType)
+                        .setClientMessage(clientMessage)
+                        .setServerMessage(serverMessage)
+                        .build();
+                try {
+                    deliverPSIMessage(masterSecret);
+                } catch (InsecureFallbackApprovalException | UntrustedIdentityException e) {
+                    // This should rarely happen, we accept the failure in such circumstances.
+                    Log.w(TAG, e);
+                }
+                break;
+            case TYPE_PSI_ACK:
+                serverMessage = this.herdHandshakeMessage.getServerMessage();
+                break;
         }
+    }
+
+    private ArrayList<byte[]> getNFriendsBytes(int number) {
+        Random r = new Random();
+        ArrayList<byte[]> byteArrays = new ArrayList<>();
+        for(int i = 0; i < number; i++) {
+            byte[] element = new byte[16];
+            r.nextBytes(element);
+            byteArrays.add(element);
+        }
+        return byteArrays;
     }
 
     @Override
@@ -184,18 +261,43 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
         return new SignalServiceAddress(e164number, Optional.fromNullable(relay));
     }
 
-    private void deliverMessage(MasterSecret masterSecret) {
-        EncryptingSmsDatabase database    = DatabaseFactory.getEncryptingSmsDatabase(context);
+    private void deliverPSIMessage(MasterSecret masterSecret)
+            throws UntrustedIdentityException, InsecureFallbackApprovalException{
         try {
-            SmsMessageRecord                            record      = database.getMessage(masterSecret, this.messageID);
-            FriendStore                                 friendStore = FriendStore.getInstance(context);
-            SignalServiceProtos.Content.Builder         container   = SignalServiceProtos.Content.newBuilder();
-            SignalServiceProtos.DataMessage.Builder     builder     = SignalServiceProtos.DataMessage.newBuilder();
+            Log.d(TAG, "PSI With: " + this.destination + " at step: " + this.messageType);
+            SignalServiceAddress address = getPushAddress(this.destination);
+            SignalServiceMessageSender messageSender = messageSenderFactory.create();
+
+            if (this.herdHandshakeMessage == null) {
+                Log.e(TAG, "HOW DO WE HAVE A NULL MESSAGE :O");
+                return;
+            }
+            SignalServiceDataMessage textSecureMessage = SignalServiceDataMessage.newBuilder()
+                    .withBody(Base64.encodeBytes(this.herdHandshakeMessage.toByteArray()))
+                    .withExpiration(0)
+                    .asEndSessionMessage(false)
+                    .build();
+            messageSender.sendHerdMessage(address, textSecureMessage);
+        } catch (AuthorizationFailedException | RateLimitException  | InvalidNumberException | UnregisteredUserException e) {
+            // Theoretically, none of these are possible when we're trying to trigger a PSI exchange!
+            Log.e(TAG, e.getMessage());
+        } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
+        }
+    }
+
+    private void deliverMessage(MasterSecret masterSecret) {
+        EncryptingSmsDatabase database = DatabaseFactory.getEncryptingSmsDatabase(context);
+        try {
+            SmsMessageRecord record = database.getMessage(masterSecret, this.messageID);
+            FriendStore friendStore = FriendStore.getInstance(context);
+            SignalServiceProtos.Content.Builder container = SignalServiceProtos.Content.newBuilder();
+            SignalServiceProtos.DataMessage.Builder builder = SignalServiceProtos.DataMessage.newBuilder();
 
             String body = record.getBody().getBody();
             // TODO amoghbl1: Need to check that messages aren't longer than 140 to start with.
             // Trying to add null padding here to see if it still works or gets stripped.
-            while(body.length() < 140) {
+            while (body.length() < 140) {
                 body += " ";
             }
             builder.setBody(body);
@@ -208,30 +310,30 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
 
             MessageStore messageStore = MessageStore.getInstance(context);
 
-            long   timestamp   = System.currentTimeMillis();
+            long timestamp = System.currentTimeMillis();
             String destinationNumber = record.getRecipients().getPrimaryRecipient().getNumber().replaceAll("\\s", "");
 
-            String payload     = opm.getContent();
-            String mobyTag     = friendStore.generateMobyTag(destinationNumber, payload);
+            String payload = opm.getContent();
+            String mobyTag = friendStore.generateMobyTag(destinationNumber, payload);
 
             // Used to debug if our tags work. Commented for now.
             // String sender = friendStore.verifyMobyTag(mobyTag, payload);
             // Log.d(TAG, "MobyTag testing: " + sender + " Destination: " + destinationNumber);
 
             Log.d(TAG, "Sending timestamp: " + timestamp + " encrypted message: " + payload);
-            if(destination == null) {
+            if (destination == null) {
                 Log.d(TAG, "Don't seem to have the friends key in the store, how did we try to send a herd message o.O");
                 return;
             }
             long ttl = 259200000; // 72 hour constant for now.
-            messageStore.addMessage(timestamp, timestamp + ttl,mobyTag, payload);
+            messageStore.addMessage(timestamp, timestamp + ttl, mobyTag, payload);
 
             ExchangeHistoryTracker.getInstance(context).cleanHistory(null);
             MessageStore.getInstance(context).updateStoreVersion();
 
             // Marking message as sent, but well, who knows :P
             database.markAsSent(this.messageID, true);
-        } catch (InvalidNumberException  e) {
+        } catch (InvalidNumberException e) {
             Log.e(TAG, e.getMessage());
         } catch (NoSuchMessageException e) {
             Log.e(TAG, e.getMessage());
@@ -249,7 +351,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
             SignalServiceAddress address = getPushAddress(this.destination);
             SignalServiceMessageSender messageSender = messageSenderFactory.create();
 
-            if(this.herdHandshakeMessage == null) {
+            if (this.herdHandshakeMessage == null) {
                 Log.e(TAG, "HOW DO WE HAVE A NULL HANDSHAKE MESSAGE :O");
                 return;
             }
@@ -289,5 +391,12 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
             // Might not be the best idea, maybe we should hadle this the way PushTextSendJob does.
         }
         updateTime(10000);
+    }
+
+    public static void handleSYN(Context context, HerdProtos.HandshakeMessage herdHandshakeMessage, String sender) {
+
+        ApplicationContext.getInstance(context)
+                .getJobManager()
+                .add(new SendHerdMessageJob(context, sender, SendHerdMessageJob.TYPE_PSI_SYN_ACK));
     }
 }

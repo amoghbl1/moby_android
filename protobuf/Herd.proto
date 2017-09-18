@@ -4,12 +4,24 @@ option java_outer_classname = "HerdProtos";
 option java_package = "org.denovogroup.murmur.objects";
 
 message HandshakeMessage {
-    optional string publicDevieID = 1;
-    optional int32  messageType   = 2;
-    optional bytes  sharedSecret  = 3;
+    optional string        publicDevieID = 1;
+    optional int32         messageType   = 2;
+    optional bytes         sharedSecret  = 3;
+    optional ClientMessage clientMessage = 4;
+    optional ServerMessage serverMessage = 5;
 }
 
 message HerdPacket {
     optional string destination = 1;
     optional string payload     = 2;
+}
+
+message ClientMessage {
+    optional int32 setSize        = 1;
+    repeated bytes blindedFriends = 2;
+}
+
+message ServerMessage {
+    repeated bytes doubleBlindedFriends = 1;
+    repeated bytes hashedBlindedFriends = 2;
 }
