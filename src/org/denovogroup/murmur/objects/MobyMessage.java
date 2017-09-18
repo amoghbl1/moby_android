@@ -12,11 +12,15 @@ import org.json.JSONObject;
 public class MobyMessage {
 
     public static final String TIMESTAMP   = "timestamp";
+    public static final String TTL         = "time_to_live";
     public static final String MOBYTAG     = "moby_tag";
     public static final String PAYLOAD     = "payload";
 
     // Message timestamp.
     private final long timestamp;
+
+    // Message TTL.
+    private final long timeToLive;
 
     // Message moby tag.
     private final String mobyTag;
@@ -24,8 +28,9 @@ public class MobyMessage {
     // Message payload, an encrypted string that only the destination can decrypt, given that it knows who sent it.
     private final String payload;
 
-    public MobyMessage(long timestamp, String mobyTag, String payload) {
+    public MobyMessage(long timestamp, long timeToLive, String mobyTag, String payload) {
         this.timestamp   = timestamp;
+        this.timeToLive  = timeToLive;
         this.mobyTag     = mobyTag;
         this.payload     = payload;
     }
@@ -33,6 +38,7 @@ public class MobyMessage {
     public static MobyMessage fromJSON(JSONObject json) {
         return new MobyMessage(
                 json.optLong(TIMESTAMP, -1L),
+                json.optLong(TTL, -1L),
                 json.optString(MOBYTAG, null),
                 json.optString(PAYLOAD, null)
         );
@@ -53,6 +59,7 @@ public class MobyMessage {
         JSONObject result = new JSONObject();
         try {
             result.put(TIMESTAMP, this.timestamp);
+            result.put(TTL, this.timeToLive);
             result.put(MOBYTAG, this.mobyTag);
             result.put(PAYLOAD, this.payload);
         } catch (JSONException e) {
@@ -63,6 +70,10 @@ public class MobyMessage {
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    public long getTimeToLive() {
+        return timeToLive;
     }
 
     public String getMobyTag() {

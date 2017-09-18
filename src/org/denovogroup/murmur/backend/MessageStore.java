@@ -66,9 +66,10 @@ public class MessageStore extends SQLiteOpenHelper {
     private static final String TABLE = "Messages";
 
 
-    public static final String COL_TIMESTAMP   = "timestamp";
-    public static final String COL_MOBY_TAG    = "moby_tag";
-    public static final String COL_PAYLOAD     = "payload";
+    public static final String COL_TIMESTAMP    = "timestamp";
+    public static final String COL_TIME_TO_LIVE = "time_to_live";
+    public static final String COL_MOBY_TAG     = "moby_tag";
+    public static final String COL_PAYLOAD      = "payload";
 
     private Context mContext;
 
@@ -79,6 +80,17 @@ public class MessageStore extends SQLiteOpenHelper {
             instance = new MessageStore(context);
         }
         return instance;
+    }
+
+    public synchronized void tasks() {
+        long now = System.currentTimeMillis();
+        SQLiteDatabase db = getWritableDatabase();
+
+        if(db == null)
+            return;
+
+        db.rawQuery("DELETE FROM " + TABLE + " WHERE '" + COL_TIME_TO_LIVE + "' < " + now + ";", null);
+        logMessages();
     }
 
     /** Get the current instance of MessageStore or null if none already created */
@@ -96,9 +108,10 @@ public class MessageStore extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE + " ("
-                + COL_TIMESTAMP   + " INTEGER NOT NULL,"
-                + COL_MOBY_TAG    + " VARCHAR(300) NOT NULL,"
-                + COL_PAYLOAD     + " VARCHAR(" + MAX_MESSAGE_SIZE + ") NOT NULL"
+                + COL_TIMESTAMP    + " INTEGER NOT NULL,"
+                + COL_TIME_TO_LIVE + " INTEGER NOT NULL,"
+                + COL_MOBY_TAG     + " VARCHAR(300) NOT NULL,"
+                + COL_PAYLOAD      + " VARCHAR(" + MAX_MESSAGE_SIZE + ") NOT NULL"
                 + ");");
     }
 
@@ -126,12 +139,14 @@ public class MessageStore extends SQLiteOpenHelper {
         cursor.moveToFirst();
 
         int timestampColumn   = cursor.getColumnIndex(COL_TIMESTAMP);
+        int ttlColumn         = cursor.getColumnIndex(COL_TIME_TO_LIVE);
         int mobyTagColumn     = cursor.getColumnIndex(COL_MOBY_TAG);
         int payloadColumn     = cursor.getColumnIndex(COL_PAYLOAD);
         if (cursor.getCount() > 0) {
             while (!cursor.isAfterLast()){
                 messages.add(new MobyMessage(
                         cursor.getLong(timestampColumn),
+                        cursor.getLong(ttlColumn),
                         cursor.getString(mobyTagColumn),
                         cursor.getString(payloadColumn)
                 ));
@@ -194,11 +209,12 @@ public class MessageStore extends SQLiteOpenHelper {
      * @param timestamp The timestamp of the
      * @return Returns true if the message was added. If message already exists, update its values
      */
-    public boolean addMessage(long timestamp, String mobyTag, String payload) {
+    public boolean addMessage(long timestamp, long timeToLive, String mobyTag, String payload) {
         SQLiteDatabase db = getWritableDatabase();
         if(db != null && timestamp != -1L && mobyTag != null && payload != null){
             ContentValues contentValues = new ContentValues();
             contentValues.put(MobyMessage.TIMESTAMP, timestamp);
+            contentValues.put(MobyMessage.TTL, timeToLive);
             contentValues.put(MobyMessage.MOBYTAG, mobyTag);
             contentValues.put(MobyMessage.PAYLOAD, payload);
             db.insert(TABLE, null, contentValues);
@@ -210,6 +226,7 @@ public class MessageStore extends SQLiteOpenHelper {
 
     public boolean addMessage(MobyMessage message) {
         return addMessage(message.getTimestamp(),
+                message.getTimeToLive(),
                 message.getMobyTag(),
                 message.getPayload());
     }
@@ -242,12 +259,14 @@ public class MessageStore extends SQLiteOpenHelper {
             cursor.moveToFirst();
 
             int timestampColumn   = cursor.getColumnIndex(COL_TIMESTAMP);
+            int ttlColumn         = cursor.getColumnIndex(COL_TIME_TO_LIVE);
             int mobyTagColumn     = cursor.getColumnIndex(COL_MOBY_TAG);
             int payloadColumn     = cursor.getColumnIndex(COL_PAYLOAD);
 
             while (!cursor.isAfterLast()) {
                 Log.d(TAG,
                         "timestamp: "    + cursor.getLong(timestampColumn) +
+                        " ttl: "         + cursor.getLong(ttlColumn) +
                         " source: "      + cursor.getString(mobyTagColumn) +
                         " payload: "     + cursor.getString(payloadColumn));
                 cursor.moveToNext();

@@ -244,7 +244,7 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
 
   private void deleteMessageStore() {
     MessageStore ms =  MessageStore.getInstance(getApplicationContext());
-    ms.purgeStore();
+    ms.purgeStore(); deleteFriendStore();
   }
 
   private void deleteFriendStore() {

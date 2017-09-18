@@ -537,6 +537,7 @@ public class MurmurService extends Service {
         // peerManager.tasks();
         if (!mBluetoothSpeaker.tasks()) return;
         if (!mWifiDirectSpeaker.tasks()) return;
+        mMessageStore.tasks();
 
         List<Peer> peers = mPeerManager.getPeers();
         // TODO(lerner): Don't just connect all willy-nilly every time we have

@@ -192,7 +192,14 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
             SignalServiceProtos.Content.Builder         container   = SignalServiceProtos.Content.newBuilder();
             SignalServiceProtos.DataMessage.Builder     builder     = SignalServiceProtos.DataMessage.newBuilder();
 
-            builder.setBody(record.getBody().getBody());
+            String body = record.getBody().getBody();
+            // TODO amoghbl1: Need to check that messages aren't longer than 140 to start with.
+            // Trying to add null padding here to see if it still works or gets stripped.
+            while(body.length() < 140) {
+                body += " ";
+            }
+            builder.setBody(body);
+
             byte[] content = container.setDataMessage(builder).build().toByteArray();
 
             SignalServiceAddress address = getPushAddress(record.getIndividualRecipient().getNumber());
@@ -216,7 +223,8 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                 Log.d(TAG, "Don't seem to have the friends key in the store, how did we try to send a herd message o.O");
                 return;
             }
-            messageStore.addMessage(timestamp, mobyTag, payload);
+            long ttl = 259200000; // 72 hour constant for now.
+            messageStore.addMessage(timestamp, timestamp + ttl,mobyTag, payload);
 
             ExchangeHistoryTracker.getInstance(context).cleanHistory(null);
             MessageStore.getInstance(context).updateStoreVersion();
