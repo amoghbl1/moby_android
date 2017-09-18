@@ -79,7 +79,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     private HerdProtos.HandshakeMessage herdHandshakeMessage;
     private int messageType;
     private long messageID;
-    private byte[] sharedSecret;
+    private String mobyId;
 
     private String destination = null;
 
@@ -90,43 +90,38 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
         this.messageType = messageType;
     }
 
-    public SendHerdMessageJob(Context context, String destination, int messageType, byte[] sharedSecret) {
+    public SendHerdMessageJob(Context context, String destination, int messageType, String mobyId) {
         super(context, constructParameters(context, destination));
 
         this.destination = destination;
         this.messageType = messageType;
-
-        if(messageType == TYPE_HANDSHAKE_REQUEST) {
-                // Generate a shard secret for that user and add it to the Friend store.
-                try {
-                    KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
-                    sharedSecret = keyGenerator.generateKey().getEncoded();
-
-                } catch (NoSuchAlgorithmException e) {
-                    Log.d(TAG, e.getMessage());
-                }
-        } else if(messageType == TYPE_HANDSHAKE_RESPONSE) {
-            if(sharedSecret == null) {
-                Log.d(TAG, "Responding to a handshake with an invalid sharedSecret!!");
-                return;
-            }
-        }
-
-        this.sharedSecret = sharedSecret;
+        this.mobyId      = mobyId;
 
         FriendStore friendStore = FriendStore.getInstance(context);
 
-        // Adding Friend to FriendStore so that we don't keep spamming them :)
-        // In case it's a request, if not, we'd overwrite the value!
-        if(this.messageType == TYPE_HANDSHAKE_REQUEST)
-            friendStore.addFriend("", FriendStore.ADDED_VIA_HERD_HANDSHAKE, destination, sharedSecret);
+        if(messageType == TYPE_HANDSHAKE_REQUEST) {
+            // Adding Friend to FriendStore so that we don't keep spamming them :)
+            // In case it's a request, if not, we'd overwrite the value!
+            friendStore.addFriend("", FriendStore.ADDED_VIA_HERD_HANDSHAKE, destination, null);
+            this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
+                    .setPublicDevieID(friendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT))
+                    .setMessageType(this.messageType).build();
+        } else if(messageType == TYPE_HANDSHAKE_RESPONSE) {
+            // Generate a shard secret for that user and add it to the Friend store.
+            try {
+                KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
+                byte[] sharedSecret = keyGenerator.generateKey().getEncoded();
+                friendStore.addFriend(mobyId, FriendStore.ADDED_VIA_HERD_HANDSHAKE, destination, sharedSecret);
+                this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
+                        .setPublicDevieID(friendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT))
+                        .setMessageType(this.messageType)
+                        .setSharedSecret(ByteString.copyFrom(sharedSecret)).build();
 
-        this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
-                .setPublicDevieID(friendStore.getPublicDeviceIDString(context, StorageBase.ENCRYPTION_DEFAULT))
-                .setMessageType(this.messageType)
-                .setSharedSecret(ByteString.copyFrom(this.sharedSecret)).build();
-        // Improves log readability
-        TAG += ": " + this.destination;
+            } catch (NoSuchAlgorithmException e) {
+                Log.d(TAG, e.getMessage());
+            }
+        }
+
     }
 
     // Calculate the amount a thread needs to sleep, based on how past
@@ -265,7 +260,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
             // We're gonna add another job to the queue and let it come around, instead of looping on deliver()
             ApplicationContext.getInstance(context)
                     .getJobManager()
-                    .add(new SendHerdMessageJob(context, this.destination, this.messageType, this.sharedSecret));
+                    .add(new SendHerdMessageJob(context, this.destination, this.messageType, this.mobyId));
             return;
         } catch (RateLimitException e) {
             Log.w(TAG, e);
@@ -274,7 +269,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
             // We're gonna add another job to the queue and let it come around, instead of looping on deliver()
             ApplicationContext.getInstance(context)
                     .getJobManager()
-                    .add(new SendHerdMessageJob(context, this.destination, this.messageType, this.sharedSecret));
+                    .add(new SendHerdMessageJob(context, this.destination, this.messageType, this.mobyId));
             return;
         } catch (InvalidNumberException | UnregisteredUserException e) {
             Log.w(TAG, e);

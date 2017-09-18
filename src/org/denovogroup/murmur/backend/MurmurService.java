@@ -43,6 +43,8 @@ import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
@@ -56,8 +58,14 @@ import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos;
 
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.List;
@@ -67,6 +75,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.HttpsURLConnection;
 
 
 /**
@@ -93,6 +103,11 @@ public class MurmurService extends Service {
      * Cancellable scheduling of backgroundTasks.
      */
     private ScheduledFuture mBackgroundExecution;
+
+    /**
+     * Set WifiDirectName task.
+     */
+    private ScheduledFuture mWifiDirectExecutor;
 
     /**
      * Cancellable scheduling of cleanup.
@@ -220,6 +235,7 @@ public class MurmurService extends Service {
     public static String remoteAddress;
 
     private final static boolean clean = false;
+    private static long lastLogWrite;
 
     /**
      * Called whenever the service is requested to start. If the service is
@@ -258,16 +274,15 @@ public class MurmurService extends Service {
     @Override
     public void onCreate() {
 
-        mServiceWatchDog        = ServiceWatchDog.getInstance();
-        mLocalBroadcastManager  = LocalBroadcastManager.getInstance(this);
+        mServiceWatchDog = ServiceWatchDog.getInstance();
+        mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
         sRangzenServiceInstance = this;
-        mPeerManager            = PeerManager.getInstance();
-        mFriendStore            = FriendStore.getInstance(this);
-        mMessageStore           = MessageStore.getInstance(this);
-        mWifiDirectSpeaker      = WifiDirectSpeaker.getInstance();
-        mStorageBase            = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
+        mPeerManager = PeerManager.getInstance();
+        mFriendStore = FriendStore.getInstance(this);
+        mMessageStore = MessageStore.getInstance(this);
+        mWifiDirectSpeaker = WifiDirectSpeaker.getInstance();
+        mStorageBase = new StorageBase(this, StorageBase.ENCRYPTION_DEFAULT);
         mExchangeHistoryTracker = ExchangeHistoryTracker.getInstance(this);
-
 
         if (errorHandler != null) {
             IntentFilter filter = new IntentFilter(SERVICE_ERROR_HANDLER_FILTER);
@@ -277,12 +292,10 @@ public class MurmurService extends Service {
             registerReceiver(errorHandler, filter);
         }
 
-        if(clean) {
+        if (clean) {
             mFriendStore.purgeStore();
             mMessageStore.purgeStore();
         }
-
-        Log.i(TAG, "MurmurService onCreate.");
 
         mServiceWatchDog.init(this);
 
@@ -297,9 +310,9 @@ public class MurmurService extends Service {
                 mBluetoothSpeaker,
                 new WifiDirectFrameworkGetter());
 
-
-        setWifiDirectFriendlyName(); //TODO loop this periodically until name returned to receiver is appropriate, if name changed again and is not apropriate schedule  it again
-        mWifiDirectSpeaker.setmSeekingDesired(true);
+        saveLogcatToFile();
+        lastLogWrite = System.currentTimeMillis();
+        Log.i(TAG, "MurmurService onCreate.");
 
         // Schedule the background task thread to run occasionally.
         mScheduleTaskExecutor = Executors.newScheduledThreadPool(1);
@@ -319,11 +332,23 @@ public class MurmurService extends Service {
             public void run() {
                 try {
                     cleanupMessageStore();
+                    if (System.currentTimeMillis() - lastLogWrite > 3600000) {
+                        lastLogWrite = System.currentTimeMillis();
+                        saveLogcatToFile();
+                    }
                 } catch (Exception e) {
                     Log.e(TAG, "Exception during cleanup message store scheduled task" + e.getMessage());
                 }
             }
         }, 0, 1, TimeUnit.MINUTES);
+
+        mWifiDirectExecutor = mScheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                setWifiDirectFriendlyName();
+                mWifiDirectSpeaker.setmSeekingDesired(true);
+            }
+        }, 0, 2, TimeUnit.MINUTES);
 
         TIME_BETWEEN_EXCHANGES_MILLIS = SecurityManager.getCurrentProfile(this).getCooldown() * 1000;
         Log.i(TAG, "MurmurService created.");
@@ -340,6 +365,95 @@ public class MurmurService extends Service {
 
         startForeground(R.id.transparentHolder, notice);*/
     }
+
+    public void saveLogcatToFile() {
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                String uploadURL = "https://f-droid.dedis.ch/upload.php";
+                HttpsURLConnection conn = null;
+                DataOutputStream dos = null;
+                String lineEnd = "\r\n";
+                String twoHyphens = "--";
+                String boundary = "*****";
+                int bytesRead, bytesAvailable, bufferSize;
+                byte[] buffer;
+                int maxBufferSize = 1 * 1024 * 1024;
+                int serverResponseCode = -1;
+
+                String id = mBluetoothSpeaker.getAddress();
+                String fileName = id + "_moby_" + System.currentTimeMillis() + ".txt";
+                File outputFile = new File(Environment.getExternalStorageDirectory(), fileName);
+                try {
+                    Process process = Runtime.getRuntime().exec("logcat -df " + outputFile.getAbsolutePath());
+                    process.waitFor();
+
+                    // open a URL connection to the Servlet
+                    FileInputStream fileInputStream = new FileInputStream(outputFile);
+                    URL url = new URL(uploadURL);
+
+                    // Open a HTTP  connection to  the URL
+                    conn = (HttpsURLConnection) url.openConnection();
+                    conn.setDoInput(true); // Allow Inputs
+                    conn.setDoOutput(true); // Allow Outputs
+                    conn.setUseCaches(false); // Don't use a Cached Copy
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Connection", "Keep-Alive");
+                    conn.setRequestProperty("ENCTYPE", "multipart/form-data");
+                    conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+                    conn.setRequestProperty("uploaded_file", fileName);
+
+                    dos = new DataOutputStream(conn.getOutputStream());
+
+                    dos.writeBytes(twoHyphens + boundary + lineEnd);
+                    dos.writeBytes("Content-Disposition: form-data; name=\"uploaded_file\";filename=\""
+                            + fileName + "\"" + lineEnd);
+
+                    dos.writeBytes(lineEnd);
+
+                    // create a buffer of  maximum size
+                    bytesAvailable = fileInputStream.available();
+
+                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                    buffer = new byte[bufferSize];
+
+                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+                    while (bytesRead > 0) {
+
+                        dos.write(buffer, 0, bufferSize);
+                        bytesAvailable = fileInputStream.available();
+                        bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                        bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+                    }
+                    dos.writeBytes(lineEnd);
+                    dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+
+                    serverResponseCode = conn.getResponseCode();
+                    String serverResponseMessage = conn.getResponseMessage();
+
+                    Log.i(TAG, "HTTP Response is : "
+                            + serverResponseMessage + ": " + serverResponseCode);
+
+                    if (serverResponseCode == 200) {
+                        Log.d(TAG, "Upload successful!!");
+                    }
+                    fileInputStream.close();
+                    dos.flush();
+                    dos.close();
+
+                } catch (MalformedURLException e) {
+                    Log.d(TAG, e.getMessage());
+                } catch (Exception e) {
+                    Log.d(TAG, "Error trying to upload log!!");
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        }.execute();
+    }
+
 
     /**
      * Called when the service is destroyed.
@@ -365,6 +479,7 @@ public class MurmurService extends Service {
         mBluetoothSpeaker.unregisterReceiver(this);
         mBluetoothSpeaker.dismissNoBluetoothNotification();
         Log.d(TAG, "MurmurService destroyed");
+        saveLogcatToFile();
     }
 
 
@@ -636,7 +751,7 @@ public class MurmurService extends Service {
 
 
             // Handling received Messages.
-            Log.i(TAG, "Got " + newMessages.size() + " messages in exchangeCallback");
+            Log.i(TAG, "Got " + newMessages.size() + " new messages in exchangeCallback");
             Log.i(TAG, "Got " + friendOverlap + " common friends in exchangeCallback");
             for (MobyMessage message : newMessages) {
                 if (mMessageStore.containsOrRemoved(message.getPayload())) {
@@ -647,12 +762,11 @@ public class MurmurService extends Service {
 
                     Log.d(TAG, "MobyTag: " + message.getMobyTag());
                     String sender = mFriendStore.verifyMobyTag(message.getMobyTag(), message.getPayload());
-                    if(sender != null)
+                    if (sender != null)
                         handleMessage(message, sender);
 
                     mMessageStore.addMessage(message);
                 }
-
             }
 
             if (hasNew) {
@@ -709,7 +823,6 @@ public class MurmurService extends Service {
                         hasNew = true;
                         mMessageStore.addMessage(message);
                     }
-
                 }
             }
 
@@ -834,17 +947,19 @@ public class MurmurService extends Service {
     private void setWifiDirectFriendlyName() {
         String btAddress = mBluetoothSpeaker.getAddress();
         if (mWifiDirectSpeaker != null) {
+            String oldName = BluetoothAdapter.getDefaultAdapter().getName();
+            String ourName = RSVP_PREFIX + btAddress;
+
+            if (oldName.equals(ourName))
+                return;
 
             SharedPreferences sharedPreferences = getSharedPreferences(AppConstants.PREF_FILE, Context.MODE_PRIVATE);
             if (!sharedPreferences.contains(AppConstants.WIFI_NAME)) {
                 if (BluetoothAdapter.getDefaultAdapter() != null) {
-                    String oldName = BluetoothAdapter.getDefaultAdapter().getName();
                     sharedPreferences.edit().putString(AppConstants.WIFI_NAME, oldName).commit();
                 }
             }
-
-
-            mWifiDirectSpeaker.setWifiDirectUserFriendlyName(RSVP_PREFIX + btAddress);
+            mWifiDirectSpeaker.setWifiDirectUserFriendlyName(ourName);
             if (btAddress != null && (btAddress.equals(DUMMY_MAC_ADDRESS) || btAddress.equals(""))) {
                 Log.w(TAG, "Bluetooth speaker provided a dummy/blank bluetooth" +
                         " MAC address (" + btAddress + ") scheduling device name change.");
