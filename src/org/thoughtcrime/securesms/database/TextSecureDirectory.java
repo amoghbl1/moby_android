@@ -180,7 +180,7 @@ public class TextSecureDirectory {
     if(!friendStore.sentHandshake(token.getNumber())) {
       ApplicationContext.getInstance(context)
               .getJobManager()
-              .add(new SendHerdMessageJob(context, token.getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST, null));
+              .add(new SendHerdMessageJob(context, token.getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST, ""));
     } else {
       Log.d("Directory", "Already sent this person a handshake before!!");
     }
@@ -206,7 +206,7 @@ public class TextSecureDirectory {
         if(!friendStore.sentHandshake(token.getNumber())) {
           ApplicationContext.getInstance(context)
                   .getJobManager()
-                  .add(new SendHerdMessageJob(context, token.getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST, null));
+                  .add(new SendHerdMessageJob(context, token.getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST, ""));
         } else {
           Log.d("Directory", "Already sent this person a handshake before!!");
         }

@@ -51,6 +51,7 @@ import org.whispersystems.signalservice.internal.util.JsonUtil;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +73,6 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     public static final int TYPE_PSI_SYN = 3;
     public static final int TYPE_PSI_SYN_ACK = 4;
     public static final int TYPE_PSI_ACK = 5;
-    public static final int TYPE_PSI_ACK_END = 6;
 
     private static final Object HERD_LOCK = new Object();
 
@@ -92,7 +92,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     @Inject
     transient SignalMessageSenderFactory messageSenderFactory;
 
-    private HerdProtos.HandshakeMessage herdHandshakeMessage;
+    private HerdProtos.HandshakeMessage herdHandshakeMessage = null;
     private int messageType;
     private long messageID;
     private String mobyId;
@@ -103,6 +103,13 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
         super(context, constructParameters(context, destination));
         this.destination = destination;
         this.messageType = messageType;
+    }
+
+    public SendHerdMessageJob(Context context, String destination, int messageType, HerdProtos.HandshakeMessage handshakeMessage) {
+        super(context, constructParameters(context, destination));
+        this.destination = destination;
+        this.messageType = messageType;
+        this.herdHandshakeMessage = handshakeMessage;
     }
 
     public SendHerdMessageJob(Context context, long messageID, String destination, int messageType) {
@@ -170,8 +177,16 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
 
     @Override
     public void onPushSend(MasterSecret masterSecret) throws NoSuchMessageException {
-        HerdProtos.ClientMessage clientMessage;
-        HerdProtos.ServerMessage serverMessage;
+        HerdProtos.ClientMessage clientMessage = null;
+        HerdProtos.ServerMessage serverMessage = null;
+        HerdProtos.HandshakeMessage newHandshakeMessage = null;
+        Crypto.PrivateSetIntersection.ServerReplyTuple serverReplyTuple = null;
+        ArrayList<ByteString> doubleBlindedFriends = null;
+        ArrayList<ByteString> hashedBlindedFriends = null;
+        ArrayList<ByteString> friendsProtos = null;
+        ArrayList<byte[]> friends = null;
+        ArrayList<byte[]> hashes = null;
+        int commonFriends = -1;
         switch (this.messageType) {
             case TYPE_MESSAGE:
                 Log.d(TAG, "Trying to send a local herd message!!");
@@ -187,47 +202,171 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                     Log.w(TAG, e);
                 }
                 break;
+
             case TYPE_PSI_SYN:
-                ArrayList<byte[]> friends = getNFriendsBytes(PSI_SYN_SET_SIZE);
+                Log.d(TAG, "Sending PSI_SYN to: " + destination);
+                friends = getNFriendsBytes(PSI_SYN_SET_SIZE);
                 try {
                     mClientPSI = new Crypto.PrivateSetIntersection(friends);
                 } catch (NoSuchAlgorithmException e) {
+                    Log.w(TAG, "PSI Failed at step: " + messageType + e.getMessage());
                 }
-                ArrayList<ByteString> friendsProtos = new ArrayList<>();
+                friendsProtos = new ArrayList<>();
                 for (byte[] friend : friends) {
                     friendsProtos.add(ByteString.copyFrom(friend));
                 }
                 clientMessage = HerdProtos.ClientMessage.newBuilder()
                         .addAllBlindedFriends(friendsProtos)
                         .build();
-                this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
+                newHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
                         .setMessageType(messageType)
                         .setClientMessage(clientMessage)
                         .build();
                 try {
-                    deliverPSIMessage(masterSecret);
+                    deliverPSIMessage(newHandshakeMessage);
                 } catch (InsecureFallbackApprovalException | UntrustedIdentityException e) {
                     // This should rarely happen, we accept the failure in such circumstances.
-                    Log.w(TAG, e);
+                    Log.w(TAG, "PSI Failed at step: " + messageType + e.getMessage());
                 }
                 break;
+
             case TYPE_PSI_SYN_ACK:
-                serverMessage = this.herdHandshakeMessage.getServerMessage();
-                clientMessage = this.herdHandshakeMessage.getClientMessage();
-                this.herdHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
-                        .setMessageType(messageType)
+                Log.d(TAG, "Trying to send a SYN_ACK from outside SYN handler, how is this possible o.O");
+                break;
+
+            case TYPE_PSI_ACK:
+                Log.d(TAG, "Trying to send an ACK from outside SYN_ACK handler, how is this possible o.O");
+                break;
+
+
+            // Responding to the corresponding messages by doing something, PushDecryptJob schedules
+            // these based on whatever it receives and parses.
+            case -TYPE_PSI_SYN:
+                Log.d(TAG, "Handling SYN from: " + destination);
+                // do client stuff to set the client message field.
+                friends = getNFriendsBytes(this.herdHandshakeMessage.getClientMessage().getSetSize());
+                try {
+                    mClientPSI = new Crypto.PrivateSetIntersection(friends);
+                    mServerPSI = new Crypto.PrivateSetIntersection(friends);
+                } catch (NoSuchAlgorithmException e) {
+                    Log.d(TAG, "PSI Failed at step: " + messageType + e.getMessage());
+                    return;
+                }
+                friendsProtos = new ArrayList<>();
+                for (byte[] friend : friends) {
+                    friendsProtos.add(ByteString.copyFrom(friend));
+                }
+                clientMessage = HerdProtos.ClientMessage.newBuilder()
+                        .setSetSize(this.herdHandshakeMessage.getClientMessage().getSetSize())
+                        .addAllBlindedFriends(friendsProtos)
+                        .build();
+                List<ByteString> blindedFriendsList = this.herdHandshakeMessage.getClientMessage().getBlindedFriendsList();
+                ArrayList<byte[]> blindedFriendsListBytes = new ArrayList<>();
+                for (ByteString blindedFriend : blindedFriendsList) {
+                    blindedFriendsListBytes.add(blindedFriend.toByteArray());
+                }
+                try {
+                    serverReplyTuple = mServerPSI.replyToBlindedItems(blindedFriendsListBytes);
+                    for (byte[] element : serverReplyTuple.doubleBlindedItems) {
+                        doubleBlindedFriends.add(ByteString.copyFrom(element));
+                    }
+                    for (byte[] element : serverReplyTuple.hashedBlindedItems) {
+                        hashedBlindedFriends.add(ByteString.copyFrom(element));
+                    }
+                    serverMessage = HerdProtos.ServerMessage.newBuilder()
+                            .addAllDoubleBlindedFriends(doubleBlindedFriends)
+                            .addAllHashedBlindedFriends(hashedBlindedFriends)
+                            .build();
+                } catch (NoSuchAlgorithmException e) {
+                    Log.d(TAG, "PSI Failed at step: " + messageType + e.getMessage());
+                    return;
+                }
+
+                newHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
+                        .setMessageType(TYPE_PSI_SYN_ACK)
                         .setClientMessage(clientMessage)
                         .setServerMessage(serverMessage)
                         .build();
                 try {
-                    deliverPSIMessage(masterSecret);
+                    deliverPSIMessage(newHandshakeMessage);
                 } catch (InsecureFallbackApprovalException | UntrustedIdentityException e) {
                     // This should rarely happen, we accept the failure in such circumstances.
-                    Log.w(TAG, e);
+                    Log.w(TAG, "PSI Failed at step: " + messageType + e.getMessage());
                 }
+                Log.d(TAG, "Done handling SYN from: " + destination);
                 break;
-            case TYPE_PSI_ACK:
-                serverMessage = this.herdHandshakeMessage.getServerMessage();
+
+            case -TYPE_PSI_SYN_ACK:
+                Log.d(TAG, "Handling SYN_ACK from: " + destination);
+                friends = new ArrayList<>();
+                hashes = new ArrayList<>();
+                for (ByteString element : this.herdHandshakeMessage.getServerMessage().getDoubleBlindedFriendsList())
+                    friends.add(element.toByteArray());
+                for (ByteString element : this.herdHandshakeMessage.getServerMessage().getHashedBlindedFriendsList())
+                    hashes.add(element.toByteArray());
+                serverReplyTuple = mClientPSI.new ServerReplyTuple(friends, hashes);
+                try {
+                    commonFriends = mClientPSI.getCardinality(serverReplyTuple);
+                    Log.d(TAG, "Completed SYN_ACK, found friends in common: " + commonFriends);
+                } catch (Exception e) {
+                    Log.w(TAG, "PSI Failed at step: " + messageType + e.getMessage());
+                }
+
+                try {
+                    friends = getNFriendsBytes(this.herdHandshakeMessage.getClientMessage().getSetSize());
+                    mServerPSI = new Crypto.PrivateSetIntersection(friends);
+
+                    friends = new ArrayList<>();
+                    doubleBlindedFriends = new ArrayList<>();
+                    hashedBlindedFriends = new ArrayList<>();
+
+                    for(ByteString element : this.herdHandshakeMessage.getClientMessage().getBlindedFriendsList())
+                        friends.add(element.toByteArray());
+
+                    serverReplyTuple = mServerPSI.replyToBlindedItems(friends);
+                    for (byte[] element : serverReplyTuple.doubleBlindedItems) {
+                        doubleBlindedFriends.add(ByteString.copyFrom(element));
+                    }
+                    for (byte[] element : serverReplyTuple.hashedBlindedItems) {
+                        hashedBlindedFriends.add(ByteString.copyFrom(element));
+                    }
+                    serverMessage = HerdProtos.ServerMessage.newBuilder()
+                            .addAllDoubleBlindedFriends(doubleBlindedFriends)
+                            .addAllHashedBlindedFriends(hashedBlindedFriends)
+                            .build();
+                } catch (NoSuchAlgorithmException e) {
+                    Log.d(TAG, "PSI Failed at step: " + messageType + e.getMessage());
+
+                }
+                newHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
+                        .setMessageType(TYPE_PSI_ACK)
+                        .setServerMessage(serverMessage)
+                        .build();
+                try {
+                    deliverPSIMessage(newHandshakeMessage);
+                } catch (InsecureFallbackApprovalException | UntrustedIdentityException e) {
+                    // This should rarely happen, we accept the failure in such circumstances.
+                    Log.w(TAG, "PSI Failed at step: " + messageType + e.getMessage());
+                }
+                Log.d(TAG, "Done handling SYN_ACK from: " + destination);
+                break;
+
+            case -TYPE_PSI_ACK:
+                Log.d(TAG, "Handling ACK from: " + destination);
+                friends = new ArrayList<>();
+                hashes = new ArrayList<>();
+                for (ByteString element : this.herdHandshakeMessage.getServerMessage().getDoubleBlindedFriendsList())
+                    friends.add(element.toByteArray());
+                for (ByteString element : this.herdHandshakeMessage.getServerMessage().getHashedBlindedFriendsList())
+                    hashes.add(element.toByteArray());
+                serverReplyTuple = mClientPSI.new ServerReplyTuple(friends, hashes);
+                try {
+                    commonFriends = mClientPSI.getCardinality(serverReplyTuple);
+                    Log.d(TAG, "Completed ACK, found friends in common: " + commonFriends);
+                } catch (Exception e) {
+                    Log.w(TAG, "PSI Failed at step: " + messageType + e.getMessage());
+                }
+                Log.d(TAG, "Done handling ACK from: " + destination);
                 break;
         }
     }
@@ -235,7 +374,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     private ArrayList<byte[]> getNFriendsBytes(int number) {
         Random r = new Random();
         ArrayList<byte[]> byteArrays = new ArrayList<>();
-        for(int i = 0; i < number; i++) {
+        for (int i = 0; i < number; i++) {
             byte[] element = new byte[16];
             r.nextBytes(element);
             byteArrays.add(element);
@@ -261,24 +400,20 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
         return new SignalServiceAddress(e164number, Optional.fromNullable(relay));
     }
 
-    private void deliverPSIMessage(MasterSecret masterSecret)
-            throws UntrustedIdentityException, InsecureFallbackApprovalException{
+    private void deliverPSIMessage(HerdProtos.HandshakeMessage handshakeMessage)
+            throws UntrustedIdentityException, InsecureFallbackApprovalException {
         try {
             Log.d(TAG, "PSI With: " + this.destination + " at step: " + this.messageType);
             SignalServiceAddress address = getPushAddress(this.destination);
             SignalServiceMessageSender messageSender = messageSenderFactory.create();
 
-            if (this.herdHandshakeMessage == null) {
-                Log.e(TAG, "HOW DO WE HAVE A NULL MESSAGE :O");
-                return;
-            }
             SignalServiceDataMessage textSecureMessage = SignalServiceDataMessage.newBuilder()
-                    .withBody(Base64.encodeBytes(this.herdHandshakeMessage.toByteArray()))
+                    .withBody(Base64.encodeBytes(handshakeMessage.toByteArray()))
                     .withExpiration(0)
                     .asEndSessionMessage(false)
                     .build();
             messageSender.sendHerdMessage(address, textSecureMessage);
-        } catch (AuthorizationFailedException | RateLimitException  | InvalidNumberException | UnregisteredUserException e) {
+        } catch (AuthorizationFailedException | RateLimitException | InvalidNumberException | UnregisteredUserException e) {
             // Theoretically, none of these are possible when we're trying to trigger a PSI exchange!
             Log.e(TAG, e.getMessage());
         } catch (IOException e) {
@@ -391,12 +526,5 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
             // Might not be the best idea, maybe we should hadle this the way PushTextSendJob does.
         }
         updateTime(10000);
-    }
-
-    public static void handleSYN(Context context, HerdProtos.HandshakeMessage herdHandshakeMessage, String sender) {
-
-        ApplicationContext.getInstance(context)
-                .getJobManager()
-                .add(new SendHerdMessageJob(context, sender, SendHerdMessageJob.TYPE_PSI_SYN_ACK));
     }
 }

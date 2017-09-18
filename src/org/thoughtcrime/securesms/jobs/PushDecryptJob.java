@@ -190,18 +190,20 @@ public class PushDecryptJob extends ContextJob {
             case SendHerdMessageJob.TYPE_HANDSHAKE_RESPONSE:
               friendStore.addFriend(herdMessage.getPublicDevieID(), FriendStore.ADDED_VIA_HERD_HANDSHAKE, envelope.getSource(), herdMessage.getSharedSecret().toByteArray());
               break;
-            // We let the send herd message job do PSI.
+            // We let the send herd message job handle all PSI related messages.
             case SendHerdMessageJob.TYPE_PSI_SYN:
-              SendHerdMessageJob.handleSYN(context, herdMessage, envelope.getSource());
+              ApplicationContext.getInstance(context)
+                      .getJobManager()
+                      .add(new SendHerdMessageJob(context, envelope.getSource(), -SendHerdMessageJob.TYPE_PSI_SYN, herdMessage));
               break;
             case SendHerdMessageJob.TYPE_PSI_SYN_ACK:
               ApplicationContext.getInstance(context)
                       .getJobManager()
-                      .add(new SendHerdMessageJob(context, envelope.getSource(), SendHerdMessageJob.TYPE_PSI_ACK));
+                      .add(new SendHerdMessageJob(context, envelope.getSource(), -SendHerdMessageJob.TYPE_PSI_SYN_ACK, herdMessage));
             case SendHerdMessageJob.TYPE_PSI_ACK:
               ApplicationContext.getInstance(context)
                       .getJobManager()
-                      .add(new SendHerdMessageJob(context, envelope.getSource(), SendHerdMessageJob.TYPE_PSI_ACK_END));
+                      .add(new SendHerdMessageJob(context, envelope.getSource(), -SendHerdMessageJob.TYPE_PSI_ACK, herdMessage));
               break;
             default:
               Log.d(TAG, "Herd message with invalid message type: " + type);
