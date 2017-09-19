@@ -969,8 +969,11 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
     if (recipients.isGroupRecipient())  sendButton.disableTransport(Type.SMS);
     if (!(isHerdCapable()))             sendButton.disableTransport(Type.HERD);
 
-    if (isSecureText)                   sendButton.setDefaultTransport(Type.TEXTSECURE);
-    if (isHerdCapable())                sendButton.setDefaultTransport(Type.HERD);
+    if (isSecureText) {
+      sendButton.setDefaultTransport(Type.TEXTSECURE);
+      if (isHerdCapable())
+        sendButton.setDefaultTransport(Type.HERD);
+    }
     else                                sendButton.setDefaultTransport(Type.SMS);
 
     calculateCharactersRemaining();
