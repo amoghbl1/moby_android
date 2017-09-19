@@ -54,6 +54,7 @@ import org.denovogroup.murmur.backend.SecurityManager;
 import org.thoughtcrime.securesms.components.RatingManager;
 import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
+import org.thoughtcrime.securesms.jobs.SendHerdMessageJob;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.recipients.RecipientFactory;
 import org.thoughtcrime.securesms.recipients.Recipients;
@@ -167,7 +168,6 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     super.onOptionsItemSelected(item);
 
     switch (item.getItemId()) {
-    case R.id.menu_murmur_ms_delete:  deleteMessageStore();    return true;
     case R.id.menu_new_group:         createGroup();           return true;
     case R.id.menu_settings:          handleDisplaySettings(); return true;
     case R.id.menu_clear_passphrase:  handleClearPassphrase(); return true;
@@ -244,7 +244,7 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
 
   private void deleteMessageStore() {
     MessageStore ms =  MessageStore.getInstance(getApplicationContext());
-    ms.purgeStore(); deleteFriendStore();
+    ms.purgeStore();
   }
 
   private void deleteFriendStore() {

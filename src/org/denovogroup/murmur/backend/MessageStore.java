@@ -90,7 +90,16 @@ public class MessageStore extends SQLiteOpenHelper {
             return;
 
         db.rawQuery("DELETE FROM " + TABLE + " WHERE '" + COL_TIME_TO_LIVE + "' < " + now + ";", null);
-        logMessages();
+        Log.d(TAG, "Message queue size at " + now + " is :" + getMessageStoreSize());
+    }
+
+    public int getMessageStoreSize() {
+        SQLiteDatabase db = getReadableDatabase();
+        if(db != null) {
+            Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE, null);
+            return cursor.getCount();
+        }
+        return 0;
     }
 
     /** Get the current instance of MessageStore or null if none already created */

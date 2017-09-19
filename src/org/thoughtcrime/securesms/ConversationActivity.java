@@ -58,6 +58,7 @@ import android.view.View.OnKeyListener;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -114,6 +115,7 @@ import org.thoughtcrime.securesms.database.ThreadDatabase;
 import org.thoughtcrime.securesms.database.identity.IdentityRecordList;
 import org.thoughtcrime.securesms.jobs.MultiDeviceBlockedUpdateJob;
 import org.thoughtcrime.securesms.jobs.RetrieveProfileJob;
+import org.thoughtcrime.securesms.jobs.SendHerdMessageJob;
 import org.thoughtcrime.securesms.mms.AttachmentManager;
 import org.thoughtcrime.securesms.mms.AttachmentManager.MediaType;
 import org.thoughtcrime.securesms.mms.AudioSlide;
@@ -515,14 +517,26 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
       inflater.inflate(R.menu.conversation_add_to_contacts, menu);
     }
 
+    if(isHerdCapable()){
+      inflater.inflate(R.menu.conversation_moby_test, menu);
+    }
+
     super.onPrepareOptionsMenu(menu);
     return true;
+  }
+
+  private boolean isHerdCapable() {
+    FriendStore friendStore = FriendStore.getInstance(getApplicationContext());
+    return friendStore.hasFriend(getRecipients().getPrimaryRecipient().getNumber());
   }
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     super.onOptionsItemSelected(item);
     switch (item.getItemId()) {
+    case R.id.menu_moby_test:
+      sendPSIOverSignal(getRecipients().getPrimaryRecipient().getNumber());
+      return true;
     case R.id.menu_call_secure:
     case R.id.menu_call_insecure:             handleDial(getRecipients().getPrimaryRecipient()); return true;
     case R.id.menu_add_attachment:            handleAddAttachment();                             return true;
@@ -544,6 +558,30 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
     }
 
     return false;
+  }
+
+  private void sendPSIOverSignal(final String recipient) {
+    final EditText editText = new EditText(this);
+    editText.setHint("Number");
+
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    builder.setTitle("Moby PSI Test")
+            .setMessage("Enter number for PSI input.")
+            .setView(editText)
+            .setPositiveButton("Set!", new DialogInterface.OnClickListener() {
+              public void onClick(DialogInterface dialog, int whichButton) {
+                String number = editText.getText().toString();
+                SendHerdMessageJob.PSI_SYN_SET_SIZE = Integer.parseInt(number);
+                ApplicationContext.getInstance(getApplicationContext())
+                        .getJobManager()
+                        .add(new SendHerdMessageJob(getApplicationContext(), recipient, SendHerdMessageJob.TYPE_PSI_SYN, ""));
+              }
+            })
+            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+              public void onClick(DialogInterface dialog, int whichButton) {
+              }
+            })
+            .show();
   }
 
   @Override
@@ -926,14 +964,14 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
     boolean isMediaMessage = !recipients.isSingleRecipient() || attachmentManager.isAttachmentPresent();
 
     sendButton.resetAvailableTransports(isMediaMessage);
-    FriendStore friendStore = FriendStore.getInstance(getApplicationContext());
 
-    if (!isSecureText)                                                                                            sendButton.disableTransport(Type.TEXTSECURE);
-    if (recipients.isGroupRecipient())                                                                            sendButton.disableTransport(Type.SMS);
-    if (!(friendStore.hasFriend(recipients.getPrimaryRecipient().getNumber()) && recipients.isSingleRecipient())) sendButton.disableTransport(Type.HERD);
+    if (!isSecureText)                  sendButton.disableTransport(Type.TEXTSECURE);
+    if (recipients.isGroupRecipient())  sendButton.disableTransport(Type.SMS);
+    if (!(isHerdCapable()))             sendButton.disableTransport(Type.HERD);
 
-    if (isSecureText) sendButton.setDefaultTransport(Type.TEXTSECURE);
-    else              sendButton.setDefaultTransport(Type.SMS);
+    if (isSecureText)                   sendButton.setDefaultTransport(Type.TEXTSECURE);
+    if (isHerdCapable())                sendButton.setDefaultTransport(Type.HERD);
+    else                                sendButton.setDefaultTransport(Type.SMS);
 
     calculateCharactersRemaining();
     supportInvalidateOptionsMenu();
@@ -1107,9 +1145,8 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
           IdentityDatabase   identityDatabase   = DatabaseFactory.getIdentityDatabase(ConversationActivity.this);
           IdentityRecordList identityRecordList = new IdentityRecordList();
           Recipients         recipients         = params[0];
-          FriendStore        friendStore        = FriendStore.getInstance(ConversationActivity.this);
 
-          inFriendStore = friendStore.hasFriend(recipients.getPrimaryRecipient().getNumber());
+          inFriendStore = isHerdCapable();
 
           if (recipients.isGroupRecipient()) {
             recipients = DatabaseFactory.getGroupDatabase(ConversationActivity.this)

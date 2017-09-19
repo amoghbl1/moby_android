@@ -194,7 +194,6 @@ public class BluetoothBroadcastReceiver extends BroadcastReceiver {
                 .setContentIntent(pendingIntent)
                 .setSmallIcon(R.drawable.error_round)
                 .addAction(R.drawable.blank_square, context.getString(R.string.error_notification_action_turnon_bt), pendingOnIntent)
-                .addAction(R.drawable.blank_square, context.getString(R.string.error_notification_action_off_service), pendingOffIntent)
                 .build();
         mNotificationManager.notify(notificationId, notification);
     }

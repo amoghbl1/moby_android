@@ -1,6 +1,9 @@
 package org.thoughtcrime.securesms.jobs;
 
+import android.content.ContentResolver;
 import android.content.Context;
+import android.database.Cursor;
+import android.provider.ContactsContract;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -81,7 +84,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
     private static Crypto.PrivateSetIntersection mServerPSI;
     private static Crypto.PrivateSetIntersection mClientPSI;
 
-    private static final int PSI_SYN_SET_SIZE = 10;
+    public static int PSI_SYN_SET_SIZE = 100;
 
     public static long previousRun = 0;
 
@@ -217,6 +220,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                 }
                 clientMessage = HerdProtos.ClientMessage.newBuilder()
                         .addAllBlindedFriends(friendsProtos)
+                        .setSetSize(PSI_SYN_SET_SIZE)
                         .build();
                 newHandshakeMessage = HerdProtos.HandshakeMessage.newBuilder()
                         .setMessageType(messageType)
@@ -242,9 +246,14 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
             // Responding to the corresponding messages by doing something, PushDecryptJob schedules
             // these based on whatever it receives and parses.
             case -TYPE_PSI_SYN:
-                Log.d(TAG, "Handling SYN from: " + destination);
+                int setSize = this.herdHandshakeMessage.getClientMessage().getSetSize();
+                Log.d(TAG, "Handling SYN from: " + destination + " with a set size:" + setSize);
+                ContentResolver contentResolver = context.getContentResolver();
+                Cursor cursor = contentResolver.query(ContactsContract.Contacts.CONTENT_URI,
+                        null, null, null, null);
+                Log.d(TAG, "Local contacts size: " + cursor.getCount());
                 // do client stuff to set the client message field.
-                friends = getNFriendsBytes(this.herdHandshakeMessage.getClientMessage().getSetSize());
+                friends = getNFriendsBytes(setSize);
                 try {
                     mClientPSI = new Crypto.PrivateSetIntersection(friends);
                     mServerPSI = new Crypto.PrivateSetIntersection(friends);
@@ -267,6 +276,8 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                 }
                 try {
                     serverReplyTuple = mServerPSI.replyToBlindedItems(blindedFriendsListBytes);
+                    doubleBlindedFriends = new ArrayList<>();
+                    hashedBlindedFriends = new ArrayList<>();
                     for (byte[] element : serverReplyTuple.doubleBlindedItems) {
                         doubleBlindedFriends.add(ByteString.copyFrom(element));
                     }
@@ -297,7 +308,8 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                 break;
 
             case -TYPE_PSI_SYN_ACK:
-                Log.d(TAG, "Handling SYN_ACK from: " + destination);
+                setSize = this.herdHandshakeMessage.getClientMessage().getSetSize();
+                Log.d(TAG, "Handling SYN_ACK from: " + destination + " with a set size: " + setSize);
                 friends = new ArrayList<>();
                 hashes = new ArrayList<>();
                 for (ByteString element : this.herdHandshakeMessage.getServerMessage().getDoubleBlindedFriendsList())
@@ -313,7 +325,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                 }
 
                 try {
-                    friends = getNFriendsBytes(this.herdHandshakeMessage.getClientMessage().getSetSize());
+                    friends = getNFriendsBytes(setSize);
                     mServerPSI = new Crypto.PrivateSetIntersection(friends);
 
                     friends = new ArrayList<>();

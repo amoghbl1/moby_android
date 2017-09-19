@@ -1418,7 +1418,7 @@
     <string name="profile_custom_annotation">Recommended only for advanced users</string>
     <string name="AndroidManifest__murmur_settings">Configure Murmur Settings</string>
     <string name="murmur_settings_details">Configure Murmur here</string>
-    <string name="notification_no_bluetooth_message">Please turn on Bluetooth or switch to Offline mode</string>
+    <string name="notification_no_bluetooth_message">Please turn on Bluetooth for Moby</string>
     <string name="notification_no_bluetooth_title">Connection Error: Bluetooth is off</string>
     <string name="error_notification_action_turnon_bt">Turn on</string>
     <string name="error_notification_action_off_service">Switch to Offline</string>
@@ -1434,6 +1434,7 @@
     <string name="onboarding4_message_small">Murmur uses Bluetooth to communicate. Unfortunately Android 6.x applications cannot get automatic access to your Bluetooth address, so we need your help. Don\'t worry - you will only have to enter this once. If you made a mistake entering the address you can correct it later on in Settings</string>
     <string name="onboarding4_message_error">Invalid Bluetooth address</string>
     <string name="murmur_message_store_delete">Delete Message Store</string>
+    <string name="moby_test">Test Moby functionality</string>
     <!-- EOF -->
 
 </resources>
