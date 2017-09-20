@@ -1435,6 +1435,7 @@
     <string name="onboarding4_message_error">Invalid Bluetooth address</string>
     <string name="murmur_message_store_delete">Delete Message Store</string>
     <string name="moby_test">Test Moby functionality</string>
+    <string name="moby_handshake">Force moby handshake</string>
     <!-- EOF -->
 
 </resources>

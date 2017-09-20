@@ -537,6 +537,11 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
     case R.id.menu_moby_test:
       sendPSIOverSignal(getRecipients().getPrimaryRecipient().getNumber());
       return true;
+    case R.id.menu_moby_handshake:
+      ApplicationContext.getInstance(getApplicationContext())
+              .getJobManager()
+              .add(new SendHerdMessageJob(getApplicationContext(), getRecipients().getPrimaryRecipient().getNumber(), SendHerdMessageJob.TYPE_HANDSHAKE_REQUEST, ""));
+      return true;
     case R.id.menu_call_secure:
     case R.id.menu_call_insecure:             handleDial(getRecipients().getPrimaryRecipient()); return true;
     case R.id.menu_add_attachment:            handleAddAttachment();                             return true;
