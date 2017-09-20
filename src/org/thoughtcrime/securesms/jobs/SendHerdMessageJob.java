@@ -1,8 +1,10 @@
 package org.thoughtcrime.securesms.jobs;
 
+import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
+import android.os.Trace;
 import android.provider.ContactsContract;
 import android.util.Log;
 import android.widget.Toast;
@@ -207,6 +209,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                 break;
 
             case TYPE_PSI_SYN:
+                Trace.beginSection("PSI_SYN");
                 Log.d(TAG, "Sending PSI_SYN to: " + destination);
                 friends = getNFriendsBytes(PSI_SYN_SET_SIZE);
                 try {
@@ -232,6 +235,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                     // This should rarely happen, we accept the failure in such circumstances.
                     Log.w(TAG, "PSI Failed at step: " + messageType + e.getMessage());
                 }
+                Trace.endSection();
                 break;
 
             case TYPE_PSI_SYN_ACK:
@@ -246,6 +250,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
             // Responding to the corresponding messages by doing something, PushDecryptJob schedules
             // these based on whatever it receives and parses.
             case -TYPE_PSI_SYN:
+                Trace.beginSection("PSI_SYN_HANDLE");
                 int setSize = this.herdHandshakeMessage.getClientMessage().getSetSize();
                 Log.d(TAG, "Handling SYN from: " + destination + " with a set size:" + setSize);
                 ContentResolver contentResolver = context.getContentResolver();
@@ -287,6 +292,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                     serverMessage = HerdProtos.ServerMessage.newBuilder()
                             .addAllDoubleBlindedFriends(doubleBlindedFriends)
                             .addAllHashedBlindedFriends(hashedBlindedFriends)
+                            .setLocalFriendSize(cursor.getCount())
                             .build();
                 } catch (NoSuchAlgorithmException e) {
                     Log.d(TAG, "PSI Failed at step: " + messageType + e.getMessage());
@@ -305,11 +311,14 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                     Log.w(TAG, "PSI Failed at step: " + messageType + e.getMessage());
                 }
                 Log.d(TAG, "Done handling SYN from: " + destination);
+                Trace.endSection();
                 break;
 
             case -TYPE_PSI_SYN_ACK:
+                Trace.beginSection("PSI_SYN_ACK_HANDLE");
                 setSize = this.herdHandshakeMessage.getClientMessage().getSetSize();
                 Log.d(TAG, "Handling SYN_ACK from: " + destination + " with a set size: " + setSize);
+                Log.d(TAG, "Remote user contact size:" + this.herdHandshakeMessage.getServerMessage().getLocalFriendSize());
                 friends = new ArrayList<>();
                 hashes = new ArrayList<>();
                 for (ByteString element : this.herdHandshakeMessage.getServerMessage().getDoubleBlindedFriendsList())
@@ -361,9 +370,11 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                     Log.w(TAG, "PSI Failed at step: " + messageType + e.getMessage());
                 }
                 Log.d(TAG, "Done handling SYN_ACK from: " + destination);
+                Trace.endSection();
                 break;
 
             case -TYPE_PSI_ACK:
+                Trace.beginSection("PSI_ACK_HANDLE");
                 Log.d(TAG, "Handling ACK from: " + destination);
                 friends = new ArrayList<>();
                 hashes = new ArrayList<>();
@@ -379,6 +390,7 @@ public class SendHerdMessageJob extends PushSendJob implements InjectableType {
                     Log.w(TAG, "PSI Failed at step: " + messageType + e.getMessage());
                 }
                 Log.d(TAG, "Done handling ACK from: " + destination);
+                Trace.endSection();
                 break;
         }
     }

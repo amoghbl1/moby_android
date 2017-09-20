@@ -24,4 +24,5 @@ message ClientMessage {
 message ServerMessage {
     repeated bytes doubleBlindedFriends = 1;
     repeated bytes hashedBlindedFriends = 2;
+    optional int32 localFriendSize      = 3;
 }

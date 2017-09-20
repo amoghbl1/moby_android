@@ -2231,6 +2231,16 @@ public final class HerdProtos {
      * <code>repeated bytes hashedBlindedFriends = 2;</code>
      */
     com.google.protobuf.ByteString getHashedBlindedFriends(int index);
+
+    // optional int32 localFriendSize = 3;
+    /**
+     * <code>optional int32 localFriendSize = 3;</code>
+     */
+    boolean hasLocalFriendSize();
+    /**
+     * <code>optional int32 localFriendSize = 3;</code>
+     */
+    int getLocalFriendSize();
   }
   /**
    * Protobuf type {@code ServerMessage}
@@ -2299,6 +2309,11 @@ public final class HerdProtos {
               hashedBlindedFriends_.add(input.readBytes());
               break;
             }
+            case 24: {
+              bitField0_ |= 0x00000001;
+              localFriendSize_ = input.readInt32();
+              break;
+            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -2344,6 +2359,7 @@ public final class HerdProtos {
       return PARSER;
     }
 
+    private int bitField0_;
     // repeated bytes doubleBlindedFriends = 1;
     public static final int DOUBLEBLINDEDFRIENDS_FIELD_NUMBER = 1;
     private java.util.List<com.google.protobuf.ByteString> doubleBlindedFriends_;
@@ -2390,9 +2406,26 @@ public final class HerdProtos {
       return hashedBlindedFriends_.get(index);
     }
 
+    // optional int32 localFriendSize = 3;
+    public static final int LOCALFRIENDSIZE_FIELD_NUMBER = 3;
+    private int localFriendSize_;
+    /**
+     * <code>optional int32 localFriendSize = 3;</code>
+     */
+    public boolean hasLocalFriendSize() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>optional int32 localFriendSize = 3;</code>
+     */
+    public int getLocalFriendSize() {
+      return localFriendSize_;
+    }
+
     private void initFields() {
       doubleBlindedFriends_ = java.util.Collections.emptyList();
       hashedBlindedFriends_ = java.util.Collections.emptyList();
+      localFriendSize_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -2411,6 +2444,9 @@ public final class HerdProtos {
       }
       for (int i = 0; i < hashedBlindedFriends_.size(); i++) {
         output.writeBytes(2, hashedBlindedFriends_.get(i));
+      }
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeInt32(3, localFriendSize_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -2438,6 +2474,10 @@ public final class HerdProtos {
         }
         size += dataSize;
         size += 1 * getHashedBlindedFriendsList().size();
+      }
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(3, localFriendSize_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -2559,6 +2599,8 @@ public final class HerdProtos {
         bitField0_ = (bitField0_ & ~0x00000001);
         hashedBlindedFriends_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x00000002);
+        localFriendSize_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -2586,6 +2628,7 @@ public final class HerdProtos {
       public org.denovogroup.murmur.objects.HerdProtos.ServerMessage buildPartial() {
         org.denovogroup.murmur.objects.HerdProtos.ServerMessage result = new org.denovogroup.murmur.objects.HerdProtos.ServerMessage(this);
         int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           doubleBlindedFriends_ = java.util.Collections.unmodifiableList(doubleBlindedFriends_);
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -2596,6 +2639,11 @@ public final class HerdProtos {
           bitField0_ = (bitField0_ & ~0x00000002);
         }
         result.hashedBlindedFriends_ = hashedBlindedFriends_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.localFriendSize_ = localFriendSize_;
+        result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
@@ -2630,6 +2678,9 @@ public final class HerdProtos {
             hashedBlindedFriends_.addAll(other.hashedBlindedFriends_);
           }
           onChanged();
+        }
+        if (other.hasLocalFriendSize()) {
+          setLocalFriendSize(other.getLocalFriendSize());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -2802,6 +2853,39 @@ public final class HerdProtos {
         return this;
       }
 
+      // optional int32 localFriendSize = 3;
+      private int localFriendSize_ ;
+      /**
+       * <code>optional int32 localFriendSize = 3;</code>
+       */
+      public boolean hasLocalFriendSize() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional int32 localFriendSize = 3;</code>
+       */
+      public int getLocalFriendSize() {
+        return localFriendSize_;
+      }
+      /**
+       * <code>optional int32 localFriendSize = 3;</code>
+       */
+      public Builder setLocalFriendSize(int value) {
+        bitField0_ |= 0x00000004;
+        localFriendSize_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 localFriendSize = 3;</code>
+       */
+      public Builder clearLocalFriendSize() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        localFriendSize_ = 0;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:ServerMessage)
     }
 
@@ -2849,10 +2933,10 @@ public final class HerdProtos {
       "\0132\016.ServerMessage\"2\n\nHerdPacket\022\023\n\013desti" +
       "nation\030\001 \001(\t\022\017\n\007payload\030\002 \001(\t\"8\n\rClientM" +
       "essage\022\017\n\007setSize\030\001 \001(\005\022\026\n\016blindedFriend" +
-      "s\030\002 \003(\014\"K\n\rServerMessage\022\034\n\024doubleBlinde" +
+      "s\030\002 \003(\014\"d\n\rServerMessage\022\034\n\024doubleBlinde" +
       "dFriends\030\001 \003(\014\022\034\n\024hashedBlindedFriends\030\002" +
-      " \003(\014B,\n\036org.denovogroup.murmur.objectsB\n",
-      "HerdProtos"
+      " \003(\014\022\027\n\017localFriendSize\030\003 \001(\005B,\n\036org.den",
+      "ovogroup.murmur.objectsB\nHerdProtos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -2882,7 +2966,7 @@ public final class HerdProtos {
           internal_static_ServerMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ServerMessage_descriptor,
-              new java.lang.String[] { "DoubleBlindedFriends", "HashedBlindedFriends", });
+              new java.lang.String[] { "DoubleBlindedFriends", "HashedBlindedFriends", "LocalFriendSize", });
           return null;
         }
       };
